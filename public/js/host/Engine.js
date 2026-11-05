@@ -611,7 +611,7 @@ class InputHub {
       setTimeout(() => this.emitir('sala', { codigo: 'DEMO', url: null }), 0);
       return;
     }
-    this.socket = io();
+    this.socket = io(window.NEBULA_SERVIDOR);
     this.socket.on('connect', () => {
       this.emitir('conexion', true);
       this.socket.emit('host:crear', (r) => this.emitir('sala', r));

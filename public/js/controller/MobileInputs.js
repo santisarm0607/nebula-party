@@ -12,7 +12,7 @@
 (() => {
   // 1. Conexión y estado --------------------------------------------------------
   const $ = (s) => document.querySelector(s);
-  const socket = io();
+  const socket = io(window.NEBULA_SERVIDOR);
   const mando = { unido: false, yo: null, dir: { x: 0, y: 0 }, dirs: new Set(), ultimo: null };
   const PANTALLAS = ['unirse', 'espera', 'tablero', 'minijuego', 'podio'];
   /** Dibuja el sprite del personaje (el mismo pixel art del PC, js/Sprites.js). */

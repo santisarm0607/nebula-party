@@ -18,13 +18,16 @@ const express = require('express');
 const { Server } = require('socket.io');
 
 const PUERTO = Number(process.env.PORT) || 3000;
+// En Render (internet) los mandos se abren desde GitHub Pages; en tu PC, desde tu WiFi.
+const urlMandos = () => process.env.URL_MANDOS
+  || (process.env.RENDER ? 'https://santisarm0607.github.io/nebula-party/public/controller.html' : `http://${ipLocal()}:${PUERTO}/controller.html`);
 const MAX_JUGADORES = 8;
 const EVENTOS_A_JUGADOR = new Set(['vibrar', 'info']); // eventos que el host puede mandar a un solo mando
 
 const app = express();
 app.use(express.static(path.join(__dirname, 'public')));
 const servidor = http.createServer(app);
-const io = new Server(servidor);
+const io = new Server(servidor, { cors: { origin: '*' } }); // deja conectar a la página de GitHub Pages
 
 /** salas: codigo -> { host: socketId, jugadores: Set<socketId>, bloqueada: boolean } */
 const salas = new Map();
@@ -63,7 +66,7 @@ io.on('connection', (socket) => {
     salas.set(codigo, { host: socket.id, jugadores: new Set(), bloqueada: false });
     socket.data = { rol: 'host', sala: codigo };
     socket.join(codigo);
-    responder(cb)({ codigo, url: `http://${ipLocal()}:${PUERTO}/controller.html?sala=${codigo}` });
+    responder(cb)({ codigo, url: `${urlMandos()}?sala=${codigo}` });
     console.log(`[sala ${codigo}] creada`);
   });
 
