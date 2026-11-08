@@ -1,0 +1,9 @@
+Librerías de terceros que usa Nebula Party (copiadas aquí para que el juego
+no dependa de otros servidores). Todas tienen licencia MIT.
+
+- three.min.js        Three.js r128 (https://threejs.org)          MIT, (c) 2010-2021 three.js authors
+- peerjs.min.js       PeerJS 1.5.4 (https://peerjs.com)            MIT, (c) Michelle Bu y Eric Zhang
+- qrcode.js           qrcode-generator 1.4.4 (Kazuhiko Arase)      MIT, (c) 2009 Kazuhiko Arase
+
+PeerJS usa su servidor gratuito (0.peerjs.com) solo para que los aparatos se
+encuentren; el juego viaja directo entre los navegadores.

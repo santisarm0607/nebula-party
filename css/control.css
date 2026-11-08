@@ -1,0 +1,112 @@
+/* =========================================================
+   NEBULA PARTY - control.css (página del celular)
+   Usa los colores, botones y sprites de style.css
+   ========================================================= */
+:root { --c-color: #a06bff; }
+
+body.control {
+  overflow: auto;
+  min-height: 100%;
+  display: flex; flex-direction: column;
+  color: var(--blanco);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.c-cabecera {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--c-color);
+  border-bottom: var(--borde);
+}
+.c-jugador { font-family: var(--fuente-pixel); font-size: .8rem; text-transform: uppercase; text-shadow: 2px 2px 0 var(--tinta); }
+.c-cabecera .sprite { width: 48px; }
+
+.c-zona { flex: 1; display: flex; padding: 18px; }
+.c-vista { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; text-align: center; }
+.c-vista[hidden] { display: none; }
+
+.c-logo {
+  font-family: var(--fuente-pixel); font-weight: 400; margin: 0;
+  font-size: 2.2rem; line-height: 1.2; text-transform: uppercase;
+  color: var(--amarillo);
+  text-shadow: -3px 0 0 var(--cian), 3px 0 0 var(--rosa), 0 6px 0 var(--tinta);
+}
+.c-titulo { font-size: 1.1rem; line-height: 1.5; }
+.c-sub { margin: 0; font-weight: 800; font-size: 1.05rem; line-height: 1.4; max-width: 30ch; }
+
+.c-campo { display: flex; flex-direction: column; gap: 8px; font-weight: 900; }
+.c-campo input {
+  font-family: var(--fuente-pixel); font-size: 1.6rem; text-align: center; text-transform: uppercase;
+  width: 9ch; padding: 10px;
+  border: var(--borde); background: var(--crema); color: var(--tinta);
+}
+
+.c-botones { display: flex; flex-direction: column; gap: 14px; width: min(320px, 100%); }
+.c-botones .boton { width: 100%; font-size: 1rem; padding: 16px; }
+.c-botones .c-grande { font-size: 1.4rem; padding: 40px 16px; }
+body.modo-reto .c-zona { background: rgba(255, 210, 63, .12); }
+
+/* Cruceta y botón A, grandes para el dedo */
+.c-mando { display: flex; align-items: center; justify-content: space-around; width: 100%; gap: 16px; margin-top: 10px; }
+.c-mando[hidden] { display: none; }
+.c-cruz { display: grid; grid-template-columns: repeat(3, 72px); grid-template-rows: repeat(3, 72px); gap: 4px; }
+.c-cruz button, .c-a {
+  font-family: var(--fuente-pixel); font-size: 1.2rem; color: var(--tinta);
+  background: var(--crema);
+  border: var(--borde);
+  box-shadow: 4px 4px 0 var(--tinta);
+  touch-action: none;
+}
+.c-cruz [data-boton="arriba"] { grid-column: 2; grid-row: 1; }
+.c-cruz [data-boton="izq"] { grid-column: 1; grid-row: 2; }
+.c-cruz [data-boton="der"] { grid-column: 3; grid-row: 2; }
+.c-cruz [data-boton="abajo"] { grid-column: 2; grid-row: 3; }
+.c-a { width: 110px; height: 110px; border-radius: 50%; background: var(--amarillo); font-size: 2rem; }
+.apretado { transform: translate(3px, 3px); box-shadow: 1px 1px 0 var(--tinta) !important; filter: brightness(.9); }
+
+/* Agitar para lanzar */
+.c-agitar { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.c-agitar[hidden] { display: none; }
+.c-agitar p { margin: 0; font-family: var(--fuente-pixel); font-size: .8rem; color: var(--amarillo); text-transform: uppercase; text-shadow: 2px 2px 0 var(--tinta); }
+.c-telefono {
+  width: 56px; height: 96px;
+  background: var(--crema);
+  border: var(--borde);
+  border-radius: 10px;
+  box-shadow: inset 0 0 0 6px var(--c-color);
+  animation: sacudir .35s steps(2) infinite;
+}
+@keyframes sacudir { 0% { transform: rotate(-14deg); } 100% { transform: rotate(14deg); } }
+.c-barra { width: 220px; height: 18px; background: var(--crema); border: var(--borde); }
+.c-barra span { display: block; height: 100%; width: 0; background: var(--verde); }
+
+.c-permiso { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); }
+.c-permiso[hidden] { display: none; }
+
+@media (prefers-reduced-motion: reduce) { .c-telefono { animation: none; } }
+
+/* Minijuegos con sensor */
+.c-sensor { display: flex; flex-direction: column; align-items: center; gap: 10px; max-width: 320px; }
+.c-sensor[hidden] { display: none; }
+.c-sensor p { margin: 0; font-weight: 900; line-height: 1.4; }
+.c-sensor .boton { width: 100%; }
+.c-sensor .boton[hidden], .c-barra[hidden] { display: none; }
+.c-telefono.c-inclinando { animation: inclinar 1.6s ease-in-out infinite alternate; }
+@keyframes inclinar { 0% { transform: rotate(-22deg); } 100% { transform: rotate(22deg); } }
+.c-mando.solo-a .c-cruz { display: none; }
+@media (prefers-reduced-motion: reduce) { .c-telefono.c-inclinando { animation: none; } }
+
+/* Dentro del recuadro del invitado a distancia */
+body.embebido .c-cabecera { padding: 6px 10px; }
+body.embebido .c-zona { padding: 10px; }
+body.embebido .c-vista { gap: 10px; }
+body.embebido .c-logo { font-size: 1.2rem; }
+body.embebido .c-titulo { font-size: .8rem; }
+body.embebido .c-sub { font-size: .9rem; }
+body.embebido .c-botones .boton { padding: 10px; font-size: .8rem; }
+body.embebido .c-cruz { grid-template-columns: repeat(3, 54px); grid-template-rows: repeat(3, 54px); }
+body.embebido .c-a { width: 80px; height: 80px; }
+.c-botones .boton.elegido { box-shadow: 0 0 0 4px var(--blanco), var(--sombra); }

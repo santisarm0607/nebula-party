@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#2d2282">
+  <title>Nebula Party - Control</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%AA%90%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/control.css">
+</head>
+<body class="control">
+  <header class="c-cabecera" id="c-cabecera">
+    <span class="c-jugador" id="c-jugador">Nebula Party</span>
+    <div class="sprite sin-pj" id="c-sprite" aria-hidden="true"></div>
+  </header>
+
+  <main class="c-zona">
+    <!-- Unirse a una sala -->
+    <section class="c-vista" id="c-conectar">
+      <h1 class="c-logo">Nebula<br>Party</h1>
+      <p class="c-sub" id="c-estado">Escribe el código de la sala que sale en la pantalla grande.</p>
+      <label class="c-campo">
+        <span>Código de la sala</span>
+        <input id="c-codigo" maxlength="4" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABCD">
+      </label>
+      <button class="boton b-verde" id="c-unirme">Unirme</button>
+    </section>
+
+    <!-- Lo que manda la pantalla grande -->
+    <section class="c-vista" id="c-juego" hidden>
+      <h2 class="c-titulo" id="c-titulo"></h2>
+      <p class="c-sub" id="c-sub"></p>
+
+      <div class="c-agitar" id="c-agitar" hidden>
+        <div class="c-telefono" aria-hidden="true"></div>
+        <p>¡Agita el celular!</p>
+        <div class="c-barra" aria-hidden="true"><span id="c-energia"></span></div>
+      </div>
+
+      <!-- Minijuegos con sensor: inclinar (con su "centro") o agitar -->
+      <div class="c-sensor" id="c-sensor" hidden>
+        <div class="c-telefono" id="c-sensor-dibujo" aria-hidden="true"></div>
+        <p id="c-sensor-texto"></p>
+        <div class="c-barra" id="c-sensor-barra" hidden aria-hidden="true"><span id="c-empuje"></span></div>
+        <button class="boton b-verde" id="c-listo">LISTO</button>
+        <button class="boton b-crema" id="c-recentrar" hidden>Re-centrar</button>
+      </div>
+
+      <div class="c-botones" id="c-botones"></div>
+
+      <div class="c-mando" id="c-mando" hidden>
+        <div class="c-cruz">
+          <button data-boton="arriba" aria-label="Arriba">▲</button>
+          <button data-boton="izq" aria-label="Izquierda">◀</button>
+          <button data-boton="der" aria-label="Derecha">▶</button>
+          <button data-boton="abajo" aria-label="Abajo">▼</button>
+        </div>
+        <button class="c-a" data-boton="accion" aria-label="Acción">A</button>
+      </div>
+    </section>
+  </main>
+
+  <button class="boton b-cian c-permiso" id="c-permiso" hidden>Activar sensor de movimiento</button>
+
+  <script src="libs/peerjs.min.js"></script>
+  <script src="js/agitar.js"></script>
+  <script src="js/control.js"></script>
+</body>
+</html>

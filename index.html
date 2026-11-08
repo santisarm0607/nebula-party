@@ -2,13 +2,362 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Nebula Party</title>
-  <link rel="icon" type="image/svg+xml" href="public/img/favicon.svg">
-  <!-- GitHub Pages abre esta página: lleva al juego que está en /public -->
-  <meta http-equiv="refresh" content="0; url=public/index.html">
+  <meta name="description" content="Nebula Party: party game galáctico en pixel art para 2 a 8 jugadores. Los celulares son los controles.">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3E%F0%9F%AA%90%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Nunito:wght@700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <p><a href="public/index.html">Entrar a Nebula Party</a></p>
+  <!-- Decoración del fondo: planetas y bolitas (solo visual) -->
+  <div class="decor" aria-hidden="true">
+    <span class="planeta pl-rosa"></span>
+    <span class="planeta pl-morado"></span>
+    <span class="planeta pl-azul"></span>
+    <span class="planeta pl-durazno"></span>
+    <span class="planeta-anillo"></span>
+    <span class="bolita bo-verde"></span>
+    <span class="bolita bo-rosa"></span>
+  </div>
+  <!-- Fondo de estrellas (decorativo) -->
+  <canvas id="fondo" aria-hidden="true"></canvas>
+  <!-- Avisos para lectores de pantalla -->
+  <p id="aviso" class="solo-lector" aria-live="polite"></p>
+
+  <!-- ===================== 1. MENÚ PRINCIPAL ===================== -->
+  <section id="pantalla-menu" class="pantalla activa" aria-labelledby="titulo-juego">
+    <header class="menu-cabecera">
+      <h1 id="titulo-juego" class="logo">
+        <span class="logo-linea" data-texto="Nebula">Nebula</span>
+        <span class="logo-linea" data-texto="Party">Party</span>
+      </h1>
+      <p class="lema">Party game galáctico · PC + celulares</p>
+    </header>
+
+    <nav class="menu-botones lista-navegable" aria-label="Menú principal">
+      <button class="boton b-verde" id="btn-jugar-menu">Jugar</button>
+      <button class="boton b-cian" id="btn-como">Cómo jugar</button>
+      <button class="boton b-amarillo" id="btn-opciones">Ajustes</button>
+      <button class="boton b-morado" id="btn-records">Récords</button>
+      <button class="boton b-rosa" id="btn-creditos">Créditos</button>
+    </nav>
+
+    <p class="ayuda-pixel">Flechas para moverte · Enter para elegir · O usa el ratón</p>
+    <p class="version" id="version">v1.0.1 · 12 minijuegos · QR + multijugador a distancia</p>
+  </section>
+
+  <!-- ===================== 1B. ESCOGER MODO ===================== -->
+  <section id="pantalla-modos" class="pantalla" aria-labelledby="titulo-modos">
+    <header class="barra-superior">
+      <button class="boton b-crema boton-chico" data-atras>Atrás</button>
+      <h2 id="titulo-modos">Escoge el modo</h2>
+      <span class="espaciador"></span>
+    </header>
+
+    <nav class="modos lista-navegable" aria-label="Modos de juego">
+      <button class="boton boton-modo b-amarillo" data-modo="bots">
+        Prueba con bots
+        <small>Tú contra 3 o 7 bots</small>
+      </button>
+      <button class="boton boton-modo b-rosa" data-modo="pantalla">
+        Todos en una pantalla
+        <small>Escanean el QR y los celulares son los controles (hasta 8)</small>
+      </button>
+      <button class="boton boton-modo b-cian" data-modo="distancia">
+        Multijugador
+        <small>A distancia: cada uno desde su casa con un enlace (hasta 8)</small>
+      </button>
+    </nav>
+
+    <p class="ayuda-pixel">Flechas para moverte · Enter para elegir · Esc para volver</p>
+  </section>
+
+  <!-- ===================== 1C. SALA MULTIJUGADOR (red.js) ===================== -->
+  <section id="pantalla-sala" class="pantalla" aria-labelledby="titulo-sala">
+    <header class="barra-superior">
+      <button class="boton b-crema boton-chico" data-atras>Atrás</button>
+      <h2 id="titulo-sala">Todos en una pantalla</h2>
+      <span class="espaciador"></span>
+    </header>
+    <div class="sala">
+      <div class="sala-qr">
+        <canvas id="sala-qr" width="260" height="260" aria-label="Código QR para unirse"></canvas>
+        <p class="sala-codigo">Sala: <b id="sala-codigo">....</b></p>
+        <p class="sala-url" id="sala-url"></p>
+        <button class="boton b-amarillo boton-chico" id="btn-invitar">Invitar a distancia</button>
+        <p class="sala-url" id="sala-invitacion"></p>
+      </div>
+      <div class="sala-info">
+        <p class="sala-estado" id="sala-estado" aria-live="polite"></p>
+        <ol class="sala-lista" id="sala-lista"></ol>
+        <p class="ayuda">Abre la cámara del celular y apunta al código: se abre el control y entra a la sala solo, sin escribir nada ni pasar ningún enlace. Hasta 8 celulares, con internet. Si tu cámara no lee QR, entra a la dirección de abajo y escribe el código.</p>
+      </div>
+    </div>
+    <footer class="pie-pantalla">
+      <button class="boton b-crema boton-chico" id="btn-sala-teclado">Jugar con teclado (sin celulares)</button>
+      <button class="boton b-verde" id="btn-sala-empezar" disabled>Elegir personajes</button>
+    </footer>
+  </section>
+
+  <!-- ===================== 1D. INVITADO A DISTANCIA (espejo.js) ===================== -->
+  <section id="pantalla-espejo" class="pantalla" aria-labelledby="titulo-espejo">
+    <header class="barra-superior">
+      <button class="boton b-crema boton-chico" id="btn-espejo-salir">Salir</button>
+      <h2 id="titulo-espejo">Multijugador a distancia</h2>
+      <span class="espaciador"></span>
+    </header>
+    <div class="espejo-info">
+      <p class="sala-estado" id="espejo-estado" aria-live="polite"></p>
+      <ol class="sala-lista" id="espejo-puestos"></ol>
+      <p class="ayuda">Verás el juego aquí cuando empiece. En PC juega con W A S D o flechas y Espacio (los números eligen opciones); en celular, con el control del recuadro.</p>
+    </div>
+  </section>
+
+  <!-- ===================== 2. ESCOGER PERSONAJE ===================== -->
+  <section id="pantalla-personajes" class="pantalla" aria-labelledby="titulo-personajes">
+    <header class="barra-superior">
+      <button class="boton b-crema boton-chico" data-atras>Atrás</button>
+      <h2 id="titulo-personajes">Escoge tu personaje</h2>
+      <div class="selector-cantidad" id="selector-cantidad" role="group" aria-label="Cantidad de jugadores">
+        <span>Jugadores</span>
+        <button class="chip" data-cantidad="2" aria-pressed="true">2</button>
+        <button class="chip" data-cantidad="3" aria-pressed="false">3</button>
+        <button class="chip" data-cantidad="4" aria-pressed="false">4</button>
+      </div>
+      <div class="selector-cantidad" id="selector-total" role="group" aria-label="Total de jugadores en la partida">
+        <span>Total</span>
+        <button class="chip" data-total="4" aria-pressed="true">4</button>
+        <button class="chip" data-total="8" aria-pressed="false">8</button>
+      </div>
+    </header>
+
+    <div class="rejilla" id="rejilla"></div>
+
+    <div class="paneles" id="paneles"></div>
+
+    <footer class="pie-pantalla">
+      <p class="ayuda" id="ayuda-controles"></p>
+      <button class="boton b-verde" id="btn-ir-mundos" disabled>Elegir mundo</button>
+    </footer>
+  </section>
+
+  <!-- ===================== 3. ESCOGER MUNDO ===================== -->
+  <section id="pantalla-mundos" class="pantalla" aria-labelledby="titulo-mundos">
+    <header class="cabecera-mundos">
+      <h2 id="titulo-mundos" class="titulo-amarillo">Elige el mundo</h2>
+      <p class="ayuda-pixel">Flechas: elegir mundo · Espacio: ¡Jugar! · B: atrás · O haz clic</p>
+    </header>
+
+    <div class="mundos" id="lista-mundos"></div>
+
+    <div class="selector-cantidad selector-rondas" id="selector-rondas" role="group" aria-label="Número de rondas">
+      <span>Rondas</span>
+      <button class="chip" data-rondas="6" aria-pressed="false">6</button>
+      <button class="chip" data-rondas="10" aria-pressed="true">10</button>
+      <button class="chip" data-rondas="15" aria-pressed="false">15</button>
+      <button class="chip" data-rondas="20" aria-pressed="false">20</button>
+    </div>
+
+    <footer class="botones-mundo">
+      <button class="boton b-rosa" data-atras>&lt; Atrás</button>
+      <button class="boton b-cian" id="btn-azar">Al azar</button>
+      <button class="boton b-verde boton-destacado" id="btn-jugar">¡Jugar aquí!</button>
+    </footer>
+  </section>
+
+  <!-- ===================== 4. JUEGO (TABLERO) ===================== -->
+  <section id="pantalla-juego" class="pantalla" aria-label="Tablero">
+    <canvas id="tablero"></canvas>
+
+    <div class="hud" id="hud">
+      <div class="hud-centro">
+        <p class="hud-ronda" id="hud-ronda">Ronda 1/10</p>
+        <p class="hud-mundo" id="hud-mundo"></p>
+        <div class="hud-botones">
+          <button class="boton b-crema boton-chico" id="btn-pausa">Pausa</button>
+          <button class="boton b-cian boton-chico" id="btn-ver-mapa">Ver mapa</button>
+          <button class="boton b-amarillo boton-chico" id="btn-centrar" disabled>Centrar</button>
+        </div>
+      </div>
+      <!-- Las 4 tarjetas de jugador se crean en script.js -->
+    </div>
+
+    <!-- Dado de 10 caras (aparece en el centro en cada turno) -->
+    <div class="capa-dado" id="capa-dado" hidden>
+      <p class="quien-lanza" id="quien-lanza"></p>
+      <button class="caja-dado" id="caja-dado" aria-label="Lanzar el dado">
+        <canvas id="lienzo-dado" width="200" height="200"></canvas>
+        <span class="dado-texto" id="dado-texto" aria-hidden="true"></span>
+      </button>
+      <p class="resultado-dado" id="resultado-dado" aria-hidden="true"></p>
+    </div>
+
+    <!-- Carta de evento o regla del mundo -->
+    <div class="carta" id="carta" role="status" hidden>
+      <span class="carta-icono" id="carta-icono" aria-hidden="true"></span>
+      <canvas class="carta-3d" id="carta-3d" width="192" height="96" aria-hidden="true" hidden></canvas>
+      <h3 id="carta-titulo"></h3>
+      <p id="carta-texto"></p>
+    </div>
+
+    <!-- Reto para atrapar la estrella fugaz -->
+    <div class="reto" id="reto" role="dialog" aria-labelledby="reto-titulo" hidden>
+      <h3 id="reto-titulo">¡Atrapa la estrella fugaz!</h3>
+      <p class="reto-quien" id="reto-quien"></p>
+      <div class="reto-barra" aria-hidden="true">
+        <span class="reto-zona" id="reto-zona"></span>
+        <span class="reto-flecha" id="reto-flecha"></span>
+      </div>
+      <button class="boton b-amarillo" id="btn-atrapar">¡Atrapar!</button>
+      <p class="reto-ayuda" id="reto-ayuda"></p>
+    </div>
+
+    <div class="mensaje-turno" id="mensaje-turno">
+      <p id="texto-turno">Turno de J1</p>
+      <div class="acciones-turno" id="acciones-turno"></div>
+      <small id="nota-turno"></small>
+    </div>
+
+    <!-- Minijuegos (minijuegos.js) -->
+    <div class="capa-mj" id="capa-mj" hidden>
+      <canvas id="mj-lienzo"></canvas>
+
+      <div class="mj-ruleta" id="mj-ruleta" hidden>
+        <h2 id="mj-ruleta-titulo">¡Minijuego!</h2>
+        <div class="ruleta-marco">
+          <span class="ruleta-flecha" aria-hidden="true"></span>
+          <canvas id="ruleta-lienzo" width="256" height="256" aria-hidden="true"></canvas>
+        </div>
+        <p class="ruleta-nombre" id="ruleta-nombre" aria-live="polite"></p>
+      </div>
+
+      <div class="mj-panel" id="mj-intro" role="dialog" aria-labelledby="mj-titulo" hidden>
+        <p class="mj-tipo" id="mj-tipo"></p>
+        <h2 id="mj-titulo"></h2>
+        <p class="mj-frase" id="mj-frase"></p>
+        <p class="mj-como" id="mj-como"></p>
+        <ul class="mj-controles" id="mj-controles"></ul>
+        <p class="mj-sensor" id="mj-sensor" hidden></p>
+        <p class="mj-ayuda">Pulsa tu botón de acción cuando estés listo.</p>
+        <button class="boton b-verde" id="btn-mj-empezar">¡Empezar!</button>
+      </div>
+
+      <div class="mj-panel" id="mj-resultados" role="dialog" aria-labelledby="mj-ganador" hidden>
+        <h2 id="mj-ganador"></h2>
+        <ol class="mj-lista" id="mj-lista-resultados"></ol>
+        <button class="boton b-verde" id="btn-mj-continuar">Continuar</button>
+      </div>
+
+      <p class="mj-girar" aria-live="polite">Gira el celular para jugar mejor</p>
+      <!-- Controles táctiles para J1 (solo en pantallas táctiles) -->
+      <div class="mj-tactil" id="mj-tactil" aria-hidden="true">
+        <div class="mj-cruz">
+          <button data-boton="arriba">▲</button>
+          <button data-boton="izq">◀</button>
+          <button data-boton="der">▶</button>
+          <button data-boton="abajo">▼</button>
+        </div>
+        <button class="mj-recentrar" id="mj-recentrar" hidden>Re-centrar</button>
+        <button class="mj-accion" data-boton="accion">A</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Control del invitado a distancia (control.html en un recuadro) -->
+  <div class="espejo-caja" id="espejo-caja" hidden>
+    <button class="espejo-plegar" id="espejo-plegar">Ocultar control ▼</button>
+    <iframe id="espejo-control" title="Tu control" allow="accelerometer; gyroscope; screen-wake-lock"></iframe>
+  </div>
+
+  <!-- ===================== VENTANAS ===================== -->
+  <div class="capa" id="capa-pausa" role="dialog" aria-modal="true" aria-labelledby="titulo-pausa" hidden>
+    <div class="ventana">
+      <h2 id="titulo-pausa">Pausa</h2>
+      <button class="boton b-verde" id="btn-continuar">Continuar</button>
+      <button class="boton b-crema" id="btn-salir">Volver al menú</button>
+    </div>
+  </div>
+
+  <div class="capa" id="capa-opciones" role="dialog" aria-modal="true" aria-labelledby="titulo-opciones" hidden>
+    <div class="ventana">
+      <h2 id="titulo-opciones">Ajustes</h2>
+      <label class="opcion">
+        <span>Volumen de efectos</span>
+        <input type="range" id="op-volumen" min="0" max="100" step="5">
+      </label>
+      <label class="opcion opcion-fila">
+        <input type="checkbox" id="op-animaciones">
+        <span>Reducir animaciones</span>
+      </label>
+      <label class="opcion opcion-fila">
+        <input type="checkbox" id="op-agitar">
+        <span>Lanzar el dado agitando el celular</span>
+      </label>
+      <button class="boton b-cian" id="btn-permiso-sensor" hidden>Activar sensor (iPhone)</button>
+      <button class="boton b-crema" id="btn-pantalla-completa">Pantalla completa</button>
+      <button class="boton b-verde" id="btn-cerrar-opciones">Listo</button>
+    </div>
+  </div>
+
+  <div class="capa" id="capa-podio" role="dialog" aria-modal="true" aria-labelledby="podio-titulo" hidden>
+    <div class="ventana ventana-podio">
+      <canvas class="copa-3d" id="copa-3d" width="120" height="120" aria-hidden="true"></canvas>
+      <h2 id="podio-titulo">¡Gana!</h2>
+      <div class="podio" id="podio-lugares"></div>
+      <ol class="podio-resto" id="podio-resto" hidden></ol>
+      <div class="podio-botones">
+        <button class="boton b-verde" id="btn-podio-otra">Jugar otra vez</button>
+        <button class="boton b-crema" id="btn-podio-menu">Volver al menú</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="capa" id="capa-como" role="dialog" aria-modal="true" aria-labelledby="titulo-como" hidden>
+    <div class="ventana ventana-texto">
+      <h2 id="titulo-como">Cómo jugar</h2>
+      <p>Cada ronda, los jugadores lanzan el dado y avanzan por el tablero.</p>
+      <p>Las casillas azules dan 3 monedas, las rojas quitan 3 y las verdes (!) traen una carta sorpresa. El rombo activa la regla del mundo.</p>
+      <p>Una estrella fugaz cae en el mapa y salta a otro lugar cada ronda. Si caes o pasas por ella, presiona justo en la zona verde para atraparla. Con 10 monedas usas la Red grande.</p>
+      <p>Los observatorios (casillas amarillas) muestran la estrella y por 8 monedas te teletransportan cerca. Gana quien tenga más estrellas; si empatan, más monedas.</p>
+      <p>Multijugador: el anfitrión toca "Invitar a distancia" y manda el enlace; cada invitado ve el juego en su pantalla y juega con el control de abajo. Todos en una pantalla: la pantalla grande muestra un QR. Cada jugador lo escanea con su celular y lo usa como control. En tu turno, agita el celular para lanzar el dado.</p>
+      <p>Casilla naranja (VS): duelo 1 contra 1 contra quien elijas; el ganador le quita 5 monedas al otro. Carta "Minijuego relámpago": todos juegan en ese momento y el ganador gana 5 monedas.</p>
+      <p>Al final de cada ronda una ruleta escoge uno de 12 minijuegos (2D con objetos 3D y 3D). Premios: 1.º +10 monedas, 2.º +6 y 3.º +3. Controles: J1 W A S D + Espacio, J2 flechas + Enter, J3 I J K L + O, J4 numérico 8 4 5 6 + 0. En celular salen botones en pantalla.</p>
+      <p><b>Controles:</b> J1 con W A S D y Espacio. J2 con flechas y Enter. Esc o P para pausar.</p>
+      <button class="boton b-verde" data-cerrar>Entendido</button>
+    </div>
+  </div>
+
+  <div class="capa" id="capa-records" role="dialog" aria-modal="true" aria-labelledby="titulo-records" hidden>
+    <div class="ventana ventana-texto">
+      <h2 id="titulo-records">Récords</h2>
+      <div id="tabla-records"></div>
+      <button class="boton b-verde" data-cerrar>Cerrar</button>
+    </div>
+  </div>
+
+  <div class="capa" id="capa-creditos" role="dialog" aria-modal="true" aria-labelledby="titulo-creditos" hidden>
+    <div class="ventana ventana-texto">
+      <h2 id="titulo-creditos">Créditos</h2>
+      <p><b>Idea, diseño y desarrollo:</b> David Santiago Sarmiento Salguero (SantiSarm)</p>
+      <p>Ingeniería Multimedia, Universidad Simón Bolívar, Cúcuta</p>
+      <p><b>Hecho con:</b> HTML, CSS, JavaScript y Canvas. Desarrollo con ayuda de Claude.</p>
+      <p><b>Inspirado en:</b> Mario Party, LEGO Party y 1-2-3-4 Player.</p>
+      <button class="boton b-verde" data-cerrar>Cerrar</button>
+    </div>
+  </div>
+
+  <!-- Three.js solo para el dado 3D (si no carga, el dado sale en 2D) -->
+  <script src="libs/three.min.js"></script>
+  <!-- PeerJS (conexión con los celulares) y generador de QR -->
+  <script src="libs/peerjs.min.js"></script>
+  <script src="libs/qrcode.js"></script>
+  <script src="js/agitar.js"></script>
+  <script src="js/script.js"></script>
+  <script src="js/minijuegos.js"></script>
+  <script src="js/red.js"></script>
+  <script src="js/espejo.js"></script>
 </body>
 </html>
