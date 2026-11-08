@@ -86,9 +86,12 @@ function mostrarVista(d) {
   $c('c-sprite').className = 'sprite ' + (d.pj ? 'pj-' + d.pj : 'sin-pj');
   if (d.nombre) $c('c-jugador').textContent = 'J' + (C.num + 1) + ' ' + d.nombre;
   $c('c-mando').hidden = d.vista !== 'mando';
+  document.body.classList.toggle('con-mando', d.vista === 'mando');
   document.body.classList.toggle('modo-reto', d.vista === 'reto');
+  ponerControles(d);
   C.ultima = d;
   C.sel = 0;
+  $c('c-pausa').hidden = !d.pausa;
   prepararSensores(d);
 
   // Botones (turno, decisiones, reto)
@@ -103,7 +106,7 @@ function mostrarVista(d) {
       prepararAgitar(i);
     }
     const btn = document.createElement('button');
-    btn.className = 'boton ' + (d.vista === 'reto' ? 'b-amarillo c-grande' : i === 0 ? 'b-amarillo' : 'b-crema');
+    btn.className = 'boton ' + (d.vista === 'reto' ? 'b-amarillo c-grande' : b.chico ? 'b-crema c-chico' : i === 0 ? 'b-amarillo' : 'b-crema');
     btn.textContent = b.agitar && Agitar.disponible() ? 'Lanzar sin agitar' : b.texto;
     btn.addEventListener('click', () => elegirOpcion(i));
     caja.appendChild(btn);
@@ -185,7 +188,7 @@ function prepararSensores(d) {
     $c('c-sensor-texto').textContent = '¡Agita el celular para acelerar! (también puedes tocar A muchas veces)';
     $c('c-listo').hidden = true;
     $c('c-recentrar').hidden = true;
-    if (enJuego) Agitar.empezarContinuo((f) => {
+    if (enJuego || d.fase === 'intro') Agitar.empezarContinuo((f) => {
       C.empuje += f;
       $c('c-empuje').style.width = Math.min(100, f * 3) + '%';
       const ahora = performance.now();
@@ -194,7 +197,16 @@ function prepararSensores(d) {
     return;
   }
   // Inclinar
-  if (!C.calibrado) {
+  if (d.fase === 'intro' && !d.listo) {
+    if (!C.calibrado) { Inclinar.centrar(); C.calibrado = true; } // para practicar desde ya
+    $c('c-sensor-texto').textContent = 'Practica inclinando. Cuando estés listo, sostén el celular como te quede cómodo y toca LISTO: esa posición será el "centro".';
+    $c('c-listo').hidden = false;
+    $c('c-recentrar').hidden = true;
+    Inclinar.alCambiar = (x, y) => {
+      const ahora = performance.now();
+      if (ahora - C.ultimoEnvio > 50) { C.ultimoEnvio = ahora; enviar({ tipo: 'inclinar', x, y }); }
+    };
+  } else if (!C.calibrado) {
     $c('c-sensor-texto').textContent = 'Sostén el celular como te quede cómodo y toca LISTO. Esa posición será el "centro": desde ahí, inclínalo hacia donde quieras moverte.';
     $c('c-listo').hidden = false;
     $c('c-recentrar').hidden = true;
@@ -202,7 +214,7 @@ function prepararSensores(d) {
     $c('c-sensor-texto').textContent = '¡Centro guardado! Inclina el celular para moverte. Si te acomodas, toca Re-centrar.';
     $c('c-listo').hidden = true;
     $c('c-recentrar').hidden = false;
-    if (enJuego) $c('c-mando').classList.add('solo-a'); // se juega inclinando: se esconde la cruceta
+    if (enJuego) $c('c-mando').classList.add('solo-a'); // se juega inclinando: se esconden los controles
     Inclinar.alCambiar = (x, y) => {
       const ahora = performance.now();
       if (ahora - C.ultimoEnvio > 50) { C.ultimoEnvio = ahora; enviar({ tipo: 'inclinar', x, y }); }
@@ -215,9 +227,8 @@ $c('c-listo').addEventListener('click', async () => {
   Inclinar.centrar();
   C.calibrado = true;
   if (navigator.vibrate) navigator.vibrate(60);
-  // LISTO también cuenta como "estoy listo" en las instrucciones del minijuego
-  enviar({ tipo: 'boton', boton: 'accion', baja: true });
-  setTimeout(() => enviar({ tipo: 'boton', boton: 'accion', baja: false }), 80);
+  // LISTO también cuenta como "estoy listo" para terminar la práctica
+  enviar({ tipo: 'listo' });
   if (C.ultima) prepararSensores(C.ultima);
 });
 $c('c-recentrar').addEventListener('click', () => {
@@ -231,6 +242,11 @@ $c('c-recentrar').addEventListener('click', () => {
 window.addEventListener('message', (e) => {
   if (e.origin !== location.origin || !e.data || e.data.nebula !== 'tecla') return;
   const d = e.data;
+  if (d.listo) { // tecla L del invitado en PC
+    const b = !$c('c-listo-mj').hidden ? $c('c-listo-mj') : !$c('c-listo').hidden && !$c('c-sensor').hidden ? $c('c-listo') : null;
+    if (b) b.click();
+    return;
+  }
   if (C.vista === 'mando' && d.opcion === undefined) { enviar({ tipo: 'boton', boton: d.boton, baja: d.baja }); return; }
   if (!d.baja) return;
   const botones = [...$c('c-botones').querySelectorAll('button:not([disabled])')];
@@ -240,3 +256,60 @@ window.addEventListener('message', (e) => {
   C.sel = (C.sel + (d.boton === 'arriba' || d.boton === 'izq' ? -1 : 1) + botones.length) % botones.length;
   botones.forEach((b, i) => b.classList.toggle('elegido', i === C.sel));
 });
+
+/* --- Controles según el minijuego ---
+   cruz: cruceta + A (elegir personaje, Memoria, Cuenta los aliens)
+   stick: joystick (Polvo, Pinta, Sumo, Hexágonos, Meteoritos)
+   boton: solo el botón A (Duelo, Rayo tractor)
+   inclinar / agitar: se juega con el sensor (si no hay sensor, joystick o A) */
+function ponerControles(d) {
+  const conSensor = Agitar.disponible();
+  let control = d.control || 'cruz';
+  if (control === 'inclinar' && !conSensor) control = 'stick';
+  const verCruz = control === 'cruz';
+  const verStick = control === 'stick' || control === 'inclinar';
+  const verA = control === 'cruz' || control === 'boton' || d.boton || (control === 'agitar');
+  $c('c-cruz').hidden = !verCruz;
+  $c('c-stick').hidden = !verStick;
+  $c('c-a').hidden = !verA;
+  $c('c-mando').classList.toggle('solo-boton', !verCruz && !verStick);
+  // Botón LISTO de la práctica (los de inclinar lo tienen en su panel)
+  const enPractica = d.vista === 'mando' && d.fase === 'intro';
+  $c('c-listo-mj').hidden = !enPractica || d.listo || (d.control === 'inclinar' && conSensor);
+  if (!verStick) soltarStick();
+}
+
+$c('c-listo-mj').addEventListener('click', () => {
+  enviar({ tipo: 'listo' });
+  $c('c-listo-mj').hidden = true;
+  if (navigator.vibrate) navigator.vibrate(60);
+});
+
+/* --- Joystick: se arrastra la bola; manda x, y entre -1 y 1 --- */
+const S = { id: null, cx: 0, cy: 0, radio: 1, ultimo: 0 };
+function moverStick(e) {
+  let dx = e.clientX - S.cx, dy = e.clientY - S.cy;
+  const d = Math.hypot(dx, dy);
+  if (d > S.radio) { dx *= S.radio / d; dy *= S.radio / d; }
+  $c('c-stick-bola').style.transform = 'translate(' + dx + 'px, ' + dy + 'px)';
+  const ahora = performance.now();
+  if (ahora - S.ultimo > 40) { S.ultimo = ahora; enviar({ tipo: 'stick', x: Math.round(dx / S.radio * 100) / 100, y: Math.round(dy / S.radio * 100) / 100 }); }
+}
+function soltarStick() {
+  if (S.id === null) return;
+  S.id = null;
+  $c('c-stick-bola').style.transform = '';
+  enviar({ tipo: 'stick', x: 0, y: 0 });
+}
+$c('c-stick').addEventListener('pointerdown', (e) => {
+  e.preventDefault();
+  S.id = e.pointerId;
+  $c('c-stick').setPointerCapture(e.pointerId);
+  const r = $c('c-stick').getBoundingClientRect();
+  S.cx = r.left + r.width / 2; S.cy = r.top + r.height / 2; S.radio = r.width * 0.36;
+  moverStick(e);
+});
+$c('c-stick').addEventListener('pointermove', (e) => { if (e.pointerId === S.id) moverStick(e); });
+['pointerup', 'pointercancel'].forEach((ev) => $c('c-stick').addEventListener(ev, (e) => { if (e.pointerId === S.id) soltarStick(); }));
+
+$c('c-pausa').addEventListener('click', () => enviar({ tipo: 'pausa' }));

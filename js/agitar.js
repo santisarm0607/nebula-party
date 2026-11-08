@@ -99,21 +99,34 @@ const Inclinar = {
   base: null, ultimo: null, pendiente: false, x: 0, y: 0, alCambiar: null,
   GRADOS: 25, // cuántos grados de inclinación equivalen a "todo a un lado"
 
+  // Convierte el sensor a "derecha" y "adelante" según cómo esté girada la pantalla
+  // (vertical, horizontal hacia un lado u horizontal hacia el otro).
+  ejes(e) {
+    const angulo = (screen.orientation && typeof screen.orientation.angle === 'number') ? screen.orientation.angle : (window.orientation || 0);
+    const b = e.beta, g = e.gamma;
+    if (angulo === 90) return { lr: b, fb: g };
+    if (angulo === 270 || angulo === -90) return { lr: -b, fb: -g };
+    if (angulo === 180) return { lr: -g, fb: b };
+    return { lr: g, fb: -b }; // vertical
+  },
+
   centrar() {
-    if (this.ultimo) { this.base = { b: this.ultimo.b, g: this.ultimo.g }; this.pendiente = false; }
+    if (this.ultimo) { this.base = { lr: this.ultimo.lr, fb: this.ultimo.fb }; this.pendiente = false; }
     else this.pendiente = true; // se centra con la primera lectura que llegue
     this.x = 0; this.y = 0;
   },
 
   leer(e) {
     if (e.beta === null || e.beta === undefined) return;
-    this.ultimo = { b: e.beta, g: e.gamma };
+    this.ultimo = this.ejes(e);
     if (this.pendiente) this.centrar();
     if (!this.base) return;
     const limitar = (v) => Math.max(-1, Math.min(1, v));
-    this.x = limitar((e.gamma - this.base.g) / this.GRADOS);
-    this.y = limitar((this.base.b - e.beta) / this.GRADOS);
+    this.x = limitar((this.ultimo.lr - this.base.lr) / this.GRADOS);
+    this.y = limitar((this.ultimo.fb - this.base.fb) / this.GRADOS);
     if (this.alCambiar) this.alCambiar(this.x, this.y);
   }
 };
 window.addEventListener('deviceorientation', (e) => Inclinar.leer(e));
+// Si se gira la pantalla, el centro se vuelve a tomar con la nueva posición
+window.addEventListener('orientationchange', () => { if (Inclinar.base) Inclinar.pendiente = true; });

@@ -15,6 +15,7 @@
 <body class="control">
   <header class="c-cabecera" id="c-cabecera">
     <span class="c-jugador" id="c-jugador">Nebula Party</span>
+    <button class="c-pausa" id="c-pausa" hidden>Pausa</button>
     <div class="sprite sin-pj" id="c-sprite" aria-hidden="true"></div>
   </header>
 
@@ -31,35 +32,44 @@
     </section>
 
     <!-- Lo que manda la pantalla grande -->
-    <section class="c-vista" id="c-juego" hidden>
-      <h2 class="c-titulo" id="c-titulo"></h2>
-      <p class="c-sub" id="c-sub"></p>
+    <section class="c-vista c-juego" id="c-juego" hidden>
+      <div class="c-centro">
+        <h2 class="c-titulo" id="c-titulo"></h2>
+        <p class="c-sub" id="c-sub"></p>
 
-      <div class="c-agitar" id="c-agitar" hidden>
-        <div class="c-telefono" aria-hidden="true"></div>
-        <p>¡Agita el celular!</p>
-        <div class="c-barra" aria-hidden="true"><span id="c-energia"></span></div>
-      </div>
-
-      <!-- Minijuegos con sensor: inclinar (con su "centro") o agitar -->
-      <div class="c-sensor" id="c-sensor" hidden>
-        <div class="c-telefono" id="c-sensor-dibujo" aria-hidden="true"></div>
-        <p id="c-sensor-texto"></p>
-        <div class="c-barra" id="c-sensor-barra" hidden aria-hidden="true"><span id="c-empuje"></span></div>
-        <button class="boton b-verde" id="c-listo">LISTO</button>
-        <button class="boton b-crema" id="c-recentrar" hidden>Re-centrar</button>
-      </div>
-
-      <div class="c-botones" id="c-botones"></div>
-
-      <div class="c-mando" id="c-mando" hidden>
-        <div class="c-cruz">
-          <button data-boton="arriba" aria-label="Arriba">▲</button>
-          <button data-boton="izq" aria-label="Izquierda">◀</button>
-          <button data-boton="der" aria-label="Derecha">▶</button>
-          <button data-boton="abajo" aria-label="Abajo">▼</button>
+        <div class="c-agitar" id="c-agitar" hidden>
+          <div class="c-telefono" aria-hidden="true"></div>
+          <p>¡Agita el celular!</p>
+          <div class="c-barra" aria-hidden="true"><span id="c-energia"></span></div>
         </div>
-        <button class="c-a" data-boton="accion" aria-label="Acción">A</button>
+
+        <!-- Minijuegos con sensor: inclinar (con su "centro") o agitar -->
+        <div class="c-sensor" id="c-sensor" hidden>
+          <div class="c-telefono" id="c-sensor-dibujo" aria-hidden="true"></div>
+          <p id="c-sensor-texto"></p>
+          <div class="c-barra" id="c-sensor-barra" hidden aria-hidden="true"><span id="c-empuje"></span></div>
+          <button class="boton b-verde" id="c-listo">LISTO</button>
+          <button class="boton b-crema" id="c-recentrar" hidden>Re-centrar</button>
+        </div>
+
+        <!-- Práctica antes del minijuego -->
+        <button class="boton b-verde c-listo-mj" id="c-listo-mj" hidden>¡LISTO!</button>
+
+        <div class="c-botones" id="c-botones"></div>
+      </div>
+
+      <!-- Controles: cambian según el minijuego (cruceta, joystick, botón A) -->
+      <div class="c-mando" id="c-mando" hidden>
+        <div class="c-izq">
+          <div class="c-cruz" id="c-cruz">
+            <button data-boton="arriba" aria-label="Arriba">▲</button>
+            <button data-boton="izq" aria-label="Izquierda">◀</button>
+            <button data-boton="der" aria-label="Derecha">▶</button>
+            <button data-boton="abajo" aria-label="Abajo">▼</button>
+          </div>
+          <div class="c-stick" id="c-stick" hidden aria-label="Joystick"><div class="c-stick-bola" id="c-stick-bola"></div></div>
+        </div>
+        <button class="c-a" id="c-a" data-boton="accion" aria-label="Acción">A</button>
       </div>
     </section>
   </main>

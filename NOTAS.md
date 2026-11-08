@@ -106,3 +106,11 @@ Archivo nuevo: js/espejo.js (pantalla del invitado). Se agregó la sección 5 de
 - Three.js, PeerJS y el generador de QR van dentro de libs/ (ya no dependen de otros servidores). Licencias en libs/LEEME.txt.
 - README.md con modos, controles, estructura y cómo publicar. Archivo .nojekyll para GitHub Pages. Ícono de la pestaña (🪐).
 - Prueba final sin ayudas: anfitrión + celular por QR + invitado a distancia jugaron una ronda completa con minijuego hasta el podio, sin archivos faltantes ni errores.
+
+## v1.1 - Todo desde los celulares, joystick y práctica (08/11/2026)
+- Control del celular sin scroll y pensado en horizontal: textos al centro, controles en las esquinas de abajo. Botón "Pausa" chico arriba para el líder.
+- Inclinación según cómo esté girada la pantalla (vertical u horizontal a cualquier lado); si se gira, se vuelve a centrar.
+- Controles según el minijuego: joystick (Polvo, Pinta, Sumo, Hexágonos, Meteoritos), cruceta (Memoria, Aliens, elegir personaje), solo botón (Duelo, Rayo tractor), inclinar (Túnel, Equilibrio) y agitar (Cohetes). Sin sensor, inclinar pasa a joystick.
+- Túnel: sin rocas, anillos grandes (1 punto) y dorados chicos (3 puntos), imán cerca de los anillos, flecha guía de tu color, zona muerta y suavizado al inclinar.
+- Práctica antes de cada minijuego: se juega de verdad ("PRÁCTICA") hasta que todos tocan LISTO (celular: botón LISTO · teclado: tecla de acción · invitado a distancia en PC: L). Luego empieza de cero.
+- Todos en una pantalla manejado desde los celulares: el líder (primer celular) empieza, cambia jugadores y rondas, pausa y elige qué hacer en el podio. Al terminar de elegir personajes se pasa solo a votar el mundo: gana el más votado y si todos eligen "Al azar" empieza de una.

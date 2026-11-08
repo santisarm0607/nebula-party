@@ -1,5 +1,5 @@
 /* =========================================================
-   NEBULA PARTY - minijuegos.js  (v0.9: 12 minijuegos para 2 a 8 jugadores)
+   NEBULA PARTY - minijuegos.js  (v1.1: controles por minijuego, joystick y práctica antes de jugar)
    Índice:
    1. Utilidades 3D       2. Controles de los 4 jugadores
    3. Motor (ruleta, instrucciones, cuenta, resultados)
@@ -85,7 +85,7 @@ const TECLAS_MJ = [
   { arriba: ['Numpad8'], abajo: ['Numpad5'], izq: ['Numpad4'], der: ['Numpad6'], accion: ['Numpad0'] }
 ];
 const TEXTO_TECLAS = ['W A S D + Espacio', 'Flechas + Enter', 'I J K L + O', 'Numérico 8 4 5 6 + 0'];
-const mando = Array.from({ length: 8 }, () => ({ arriba: false, abajo: false, izq: false, der: false, accion: false, pulsos: [], inclX: 0, inclY: 0, usaInclinar: false, empuje: 0 }));
+const mando = Array.from({ length: 8 }, () => ({ arriba: false, abajo: false, izq: false, der: false, accion: false, pulsos: [], inclX: 0, inclY: 0, usaInclinar: false, empuje: 0, stickX: 0, stickY: 0, usaStick: false }));
 
 function apretar(num, boton, baja) {
   const m = mando[num];
@@ -115,7 +115,7 @@ function pulso(num, boton) {
   return true;
 }
 
-function soltarTodo() { mando.forEach((m) => { m.arriba = m.abajo = m.izq = m.der = m.accion = false; m.pulsos.length = 0; m.inclX = m.inclY = m.empuje = 0; }); }
+function soltarTodo() { mando.forEach((m) => { m.arriba = m.abajo = m.izq = m.der = m.accion = false; m.pulsos.length = 0; m.inclX = m.inclY = m.empuje = m.stickX = m.stickY = 0; }); }
 
 document.addEventListener('keyup', (e) => { if (MJ.activo) teclaMinijuego(e, false); });
 window.addEventListener('blur', soltarTodo);
@@ -126,6 +126,11 @@ const ejeY = (num) => (mando[num].abajo ? 1 : 0) - (mando[num].arriba ? 1 : 0);
 // Con inclinación (celular): x = derecha, y = inclinar hacia adelante. Si no, la cruceta.
 const inclinaX = (num) => (mando[num].usaInclinar ? mando[num].inclX : ejeX(num));
 const inclinaY = (num) => (mando[num].usaInclinar ? mando[num].inclY : -ejeY(num));
+// Movimiento en pantalla (-1 a 1, y positivo = abajo): inclinación, joystick o cruceta, lo que use el jugador
+const ax_ = (num) => (mando[num].usaInclinar ? mando[num].inclX : mando[num].usaStick ? mando[num].stickX : ejeX(num));
+const ay_ = (num) => (mando[num].usaInclinar ? -mando[num].inclY : mando[num].usaStick ? mando[num].stickY : ejeY(num));
+// Zona muerta: si el celular o el joystick están casi en el centro, no se mueve (evita temblores)
+const zonaMuerta = (v, z) => (Math.abs(v) < z ? 0 : Math.sign(v) * (Math.abs(v) - z) / (1 - z));
 function tomarEmpuje(num) { const e = mando[num].empuje; mando[num].empuje = 0; return e; }
 
 // Sensores del aparato donde corre el juego (si es un celular) para el primer humano local
@@ -147,7 +152,7 @@ function activarSensoresLocales(def) {
 function apagarSensoresLocales() {
   Inclinar.alCambiar = null;
   Agitar.pararContinuo();
-  mando.forEach((m) => { m.usaInclinar = false; });
+  mando.forEach((m) => { m.usaInclinar = false; m.usaStick = false; });
   if ($('mj-recentrar')) $('mj-recentrar').hidden = true;
 }
 
@@ -316,7 +321,7 @@ async function correrMinijuego(def) {
     color.className = 'mj-color color-j' + (j.num + 1);
     color.textContent = 'J' + (j.num + 1);
     const texto = document.createElement('span');
-    const conSensor = (def.inclinar || def.agitar) ? (def.inclinar ? 'inclinando ' : 'agitando ') : '';
+    const conSensor = def.control === 'inclinar' ? 'inclinando ' : def.control === 'agitar' ? 'agitando ' : def.control === 'stick' ? 'joystick ' : '';
     const teclas = esRemoto(j) ? 'Su celular' + (conSensor ? ' (' + conSensor.trim() + ')' : '') : estado.modo === 'bots' ? 'W A S D / flechas + Espacio / Enter' : TEXTO_TECLAS[j.num];
     texto.textContent = j.pj.nombre + ': ' + (j.humano ? teclas : 'Bot');
     texto.id = 'mj-listo-' + j.num;
@@ -334,9 +339,13 @@ async function correrMinijuego(def) {
   await esperarFase('intro', { listos: MJ.jug.map((j) => !j.humano) });
   $('mj-intro').hidden = true;
   if (def.inclinar) Inclinar.centrar(); // la posición actual es el centro
-  const usaInclinar = mando.map((m) => m.usaInclinar);
+  // Terminó la práctica: el minijuego empieza de cero para todos
+  const usa = mando.map((m) => [m.usaInclinar, m.usaStick]);
   soltarTodo();
-  mando.forEach((m, i) => { m.usaInclinar = usaInclinar[i]; });
+  mando.forEach((m, i) => { m.usaInclinar = usa[i][0]; m.usaStick = usa[i][1]; });
+  MJ.jug.forEach((j) => { j.puntos = 0; j.vivo = true; });
+  def.fin = false;
+  def.iniciar(MJ);
   await esperarFase('cuenta');
   MJ.apuestaAbierta = false;
   await esperarFase('jugando');
@@ -348,6 +357,16 @@ async function correrMinijuego(def) {
 }
 
 function empezarYa() { if (MJ.fase === 'intro') terminarFase(); }
+
+function marcarListo(num) {
+  if (MJ.fase !== 'intro') return;
+  const i = MJ.jug.findIndex((j) => j.num === num);
+  if (i < 0 || MJ.datos.listos[i]) return;
+  MJ.datos.listos[i] = true;
+  sonar('elegir');
+  const fila = $('mj-listo-' + num);
+  if (fila) fila.parentElement.classList.add('listo');
+}
 
 function mostrarResultados(ranking, p) {
   const lista = $('mj-lista-resultados');
@@ -388,14 +407,12 @@ function actualizarMJ(dt) {
   const f = MJ.fase;
   if (f === 'ruleta') actualizarRuleta(dt);
   else if (f === 'intro') {
-    MJ.jug.forEach((j, i) => {
-      if (j.humano && pulso(j.num, 'accion') && !MJ.datos.listos[i]) {
-        MJ.datos.listos[i] = true;
-        sonar('elegir');
-        $('mj-listo-' + j.num).textContent += '  ¡LISTO!';
-      }
-    });
-    if (MJ.datos.listos.every(Boolean) || MJ.t > 12) terminarFase();
+    // Teclado: la tecla de acción dice "listo". Celular: el botón LISTO (llega por red.js con marcarListo)
+    MJ.jug.forEach((j) => { if (j.humano && !esRemoto(j) && pulso(j.num, 'accion')) marcarListo(j.num); });
+    // PRÁCTICA: el minijuego corre de verdad para probar los controles; si se termina, vuelve a empezar
+    MJ.def.actualizar(dt, MJ);
+    if (MJ.def.fin) { MJ.def.iniciar(MJ); }
+    if (MJ.datos.listos.every(Boolean) || MJ.t > 90) terminarFase();
   } else if (f === 'cuenta') {
     const n = 3 - Math.floor(MJ.t);
     const texto = n > 0 ? String(n) : '¡YA!';
@@ -430,6 +447,7 @@ function dibujarMJ() {
   c.restore();
   dibujarHudMJ(c);
   if (MJ.cartel) texto(c, MJ.cartel, ARENA.w / 2, ARENA.h / 2, MJ.cartel.length > 3 ? 64 : 96, '#ffd23f');
+  if (MJ.fase === 'intro') texto(c, 'PRÁCTICA', ARENA.w / 2, 80, 22, '#7ef9ff');
 }
 
 function dibujarHudMJ(c) {
@@ -598,7 +616,7 @@ const mjMeteoros = {
     mj.jug.forEach((j) => {
       if (!j.vivo) { j.vy += 900 * dt; j.y += j.vy * dt; return; }
       let dir;
-      if (j.humano) dir = ejeX(j.num);
+      if (j.humano) dir = zonaMuerta(ax_(j.num), 0.15);
       else {
         j.botPiensa -= dt;
         if (j.botPiensa <= 0) {
@@ -686,7 +704,7 @@ const mjPolvo = {
     this.t += dt;
     mj.jug.forEach((j) => {
       let dx, dy;
-      if (j.humano) { dx = ejeX(j.num); dy = ejeY(j.num); }
+      if (j.humano) { dx = zonaMuerta(ax_(j.num), 0.12); dy = zonaMuerta(ay_(j.num), 0.12); }
       else {
         if (!j.botObj || !this.cristales.includes(j.botObj) || Math.random() < 0.01) {
           j.botObj = this.cristales.reduce((mejor, cr) => {
@@ -696,9 +714,11 @@ const mjPolvo = {
         }
         if (j.botObj) { dx = j.botObj.x - j.x; dy = j.botObj.y - j.y; } else { dx = dy = 0; }
       }
+      // Con joystick la velocidad depende de cuánto lo empujas; los bots van directo a su cristal
       const largo = Math.hypot(dx, dy) || 1;
-      const vel = j.humano ? 270 : 270 * j.botRuido;
-      j.moviendo = Math.abs(dx) + Math.abs(dy) > 0.5;
+      const fuerza = j.humano ? Math.min(1, largo) : 1;
+      const vel = (j.humano ? 270 : 270 * j.botRuido) * fuerza;
+      j.moviendo = largo > 0.05 && (j.humano ? fuerza > 0.05 : largo > 0.5);
       if (j.moviendo) {
         j.x = limitar(j.x + dx / largo * vel * dt, 60, 900);
         j.y = limitar(j.y + dy / largo * vel * dt, 110, 510);
@@ -996,7 +1016,7 @@ const mjSumo = {
     mj.jug.forEach((j) => {
       if (!j.vivo) { j.vy -= 20 * dt; j.y += j.vy * dt; j.x += j.vx * dt; j.z += j.vz * dt; return; }
       let ax, az, quiere;
-      if (j.humano) { ax = ejeX(j.num); az = ejeY(j.num); quiere = pulso(j.num, 'accion'); }
+      if (j.humano) { ax = zonaMuerta(ax_(j.num), 0.12); az = zonaMuerta(ay_(j.num), 0.12); quiere = pulso(j.num, 'accion'); }
       else {
         const rivales = mj.jug.filter((o) => o !== j && o.vivo);
         const obj = rivales.sort((a, b) => Math.hypot(a.x - j.x, a.z - j.z) - Math.hypot(b.x - j.x, b.z - j.z))[0];
@@ -1100,7 +1120,7 @@ const mjHex = {
     mj.jug.forEach((j) => {
       if (!j.vivo) return;
       let dx, dz;
-      if (j.humano) { dx = ejeX(j.num); dz = ejeY(j.num); }
+      if (j.humano) { dx = zonaMuerta(ax_(j.num), 0.12); dz = zonaMuerta(ay_(j.num), 0.12); }
       else {
         j.botT -= dt;
         const nivelActual = this.NIVELES.findIndex((y) => Math.abs(y + 0.175 - j.y) < 0.1);
@@ -1168,8 +1188,8 @@ const mjHex = {
 // 8. TÚNEL DE ASTEROIDES
 const mjTunel = {
   id: 'tunel', nombre: 'Túnel de asteroides', corto: 'TÚNEL', tipo: '3D', inclinar: true,
-  frase: 'Pilotas tu nave por un túnel. Pasa por los anillos de luz para sumar puntos y esquiva los asteroides. Gana quien tenga más puntos en 30 segundos.',
-  controles: 'Inclina el celular como un timón (adelante baja, atrás sube) o usa la cruceta.',
+  frase: 'Pilotas tu nave por un túnel. Pasa por los anillos para sumar puntos: los grandes valen 1 y los dorados chiquitos valen 3. La flecha de tu color te muestra el siguiente. Gana quien tenga más en 30 segundos.',
+  controles: 'Inclina el celular como un timón (adelante baja, atrás sube) o usa el joystick.',
   DUR: 30,
   iniciar(mj) {
     this.fin = false; this.t = 0; this.objetos = []; this.espera = 0.5;
@@ -1201,8 +1221,9 @@ const mjTunel = {
   },
   crearObjeto() {
     const ang = Math.random() * Math.PI * 2, rad = Math.sqrt(Math.random()) * 2.6;
-    const anillo = Math.random() < 0.45;
-    const o = { x: Math.cos(ang) * rad, y: Math.sin(ang) * rad, z: -70, anillo, r: anillo ? 0.75 : azarEn(0.5, 0.9), cruzo: false };
+    // Solo anillos (sin rocas): grandes = 1 punto, dorados chiquitos = 3 puntos
+    const dorado = Math.random() < 0.22;
+    const o = { x: Math.cos(ang) * rad, y: Math.sin(ang) * rad, z: -70, anillo: true, dorado, r: dorado ? 0.6 : 1.3, valor: dorado ? 3 : 1, cruzo: false };
     // Cada bot ve este objeto a su manera: apunta con error, a veces lo ignora o no lo esquiva
     o.bot = Array.from({ length: 8 }, () => ({ ex: azarEn(-0.8, 0.8), ey: azarEn(-0.8, 0.8), ignora: Math.random() < 0.25, esquiva: Math.random() < 0.6 }));
     o.malla = this.mallaPara('objetos', o);
@@ -1212,23 +1233,27 @@ const mjTunel = {
   },
   mallaPara(lista, o) {
     if (lista !== 'objetos') return null;
-    return o.anillo
-      ? new THREE.Mesh(new THREE.TorusGeometry(0.75, 0.1, 6, 20), mat(0xffd23f, 0x887700))
-      : new THREE.Mesh(new THREE.DodecahedronGeometry(o.r, 0), mat(0xa07050, 0x2a1005));
+    return o.dorado
+      ? new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.12, 6, 20), mat(0xffd23f, 0xaa8800))
+      : new THREE.Mesh(new THREE.TorusGeometry(1.3, 0.09, 6, 28), mat(0x7ef9ff, 0x226677));
   },
-  firmaMalla(lista, o) { return lista === 'objetos' ? (o.anillo ? 'a' : 'r' + Math.round(o.r * 10)) : null; },
+  firmaMalla(lista, o) { return lista === 'objetos' ? (o.dorado ? 'd' : 'a') : null; },
   actualizar(dt, mj) {
     this.t += dt;
     const vel = 20 + this.t * 0.5;
     this.espera -= dt;
-    if (this.espera <= 0) { this.crearObjeto(); this.espera = Math.max(0.18, 0.45 - this.t * 0.008); }
+    if (this.espera <= 0) { this.crearObjeto(); this.espera = Math.max(0.35, 0.7 - this.t * 0.008); }
     mj.jug.forEach((j) => {
       j.aturdido -= dt;
       let dx, dy;
       if (j.humano) {
-        // Celular: inclinarlo como timón (adelante = baja). Cruceta: arriba sube.
-        dx = limitar(inclinaX(j.num) * 1.3, -1, 1);
-        dy = mando[j.num].usaInclinar ? limitar(-mando[j.num].inclY * 1.3, -1, 1) : -ejeY(j.num);
+        // Celular: inclinarlo como timón (adelante = baja), con zona muerta y suavizado. Joystick o cruceta: arriba sube.
+        const m = mando[j.num];
+        const objX = limitar(zonaMuerta(ax_(j.num), 0.12) * 1.3, -1, 1);
+        const objY = m.usaInclinar ? limitar(-zonaMuerta(m.inclY, 0.12) * 1.3, -1, 1) : -zonaMuerta(ay_(j.num), 0.12);
+        j.sx = (j.sx || 0) + (objX - (j.sx || 0)) * Math.min(1, dt * 10);
+        j.sy = (j.sy || 0) + (objY - (j.sy || 0)) * Math.min(1, dt * 10);
+        dx = j.sx; dy = j.sy;
       } else {
         // Bots imperfectos: solo ven lo que está cerca, apuntan con error y a veces se distraen
         j.distraido = (j.distraido || 0) - dt;
@@ -1236,13 +1261,14 @@ const mjTunel = {
         const anillo = this.objetos.filter((o) => o.anillo && o.z < -2 && o.z > -14 && !o.bot[j.num].ignora).sort((a, b) => b.z - a.z)[0];
         dx = anillo ? anillo.x + anillo.bot[j.num].ex - j.x : -j.x * 0.3;
         dy = anillo ? anillo.y + anillo.bot[j.num].ey - j.y : -j.y * 0.3;
-        const roca = this.objetos.find((o) => !o.anillo && o.z > -5 && o.z < 0 && o.bot[j.num].esquiva && Math.hypot(o.x - j.x, o.y - j.y) < o.r + 0.7);
-        if (roca) { dx = j.x - roca.x; dy = j.y - roca.y; }
         const l = Math.hypot(dx, dy); if (l > 1) { dx /= l; dy /= l; }
         const vel = j.distraido > 0 ? 0.1 : 0.7;
         dx *= vel; dy *= vel;
       }
       j.x += dx * 4.5 * dt; j.y += dy * 4.5 * dt;
+      // Imán: si un anillo está por llegar y pasas cerca, la nave se acerca sola un poquito
+      const cerca = this.objetos.find((o) => o.z > -7 && o.z < 0 && Math.hypot(o.x - j.x, o.y - j.y) < 2.2);
+      if (cerca) { j.x += (cerca.x - j.x) * dt * 1.6; j.y += (cerca.y - j.y) * dt * 1.6; }
       const d = Math.hypot(j.x, j.y);
       if (d > 2.9) { j.x *= 2.9 / d; j.y *= 2.9 / d; }
     });
@@ -1253,8 +1279,7 @@ const mjTunel = {
         mj.jug.forEach((j) => {
           if (j.aturdido > 0) return;
           const d = Math.hypot(o.x - j.x, o.y - j.y);
-          if (o.anillo && d < 0.75) { j.puntos++; if (j.humano) sonar('elegir'); }
-          if (!o.anillo && d < o.r + 0.4) { j.puntos = Math.max(0, j.puntos - 1); j.aturdido = 1; sonar('error'); }
+          if (d < o.r) { j.puntos += o.valor; if (j.humano) sonar(o.dorado ? 'listo' : 'elegir'); }
         });
       }
     });
@@ -1263,7 +1288,7 @@ const mjTunel = {
     if (this.t >= this.DUR) this.fin = true;
   },
   ranking(jug) { return [...jug].sort((a, b) => b.puntos - a.puntos); },
-  hud: (j) => j.puntos + ' anillos',
+  hud: (j) => j.puntos + ' puntos',
   dibujar(c, mj) {
     c.fillStyle = '#05021a'; c.fillRect(0, 0, ARENA.w, ARENA.h);
     this.objetos.forEach((o) => { o.malla.position.set(o.x, o.y, o.z); if (!o.anillo) { o.malla.rotation.x += 0.03; o.malla.rotation.y += 0.02; } else o.malla.rotation.z += 0.05; });
@@ -1274,6 +1299,23 @@ const mjTunel = {
       cuadroSprite(j.piloto, cuadroQuieto(j));
     });
     render3DCompleto(c, this.escena, this.cam);
+    // Flecha guía de cada jugador humano hacia su siguiente anillo
+    mj.jug.forEach((j) => {
+      if (!j.humano || !this.cam) return;
+      const sig = this.objetos.filter((o) => o.z < -1 && o.z > -40).sort((a, b) => b.z - a.z)[0];
+      if (!sig) return;
+      const pNave = new THREE.Vector3(j.x, j.y, 0).project(this.cam);
+      const pAnillo = new THREE.Vector3(sig.x, sig.y, sig.z).project(this.cam);
+      const nx = (pNave.x + 1) / 2 * ARENA.w, ny = (1 - pNave.y) / 2 * ARENA.h;
+      const tx = (pAnillo.x + 1) / 2 * ARENA.w, ty = (1 - pAnillo.y) / 2 * ARENA.h;
+      const ang = Math.atan2(ty - ny, tx - nx), d = Math.min(70, Math.hypot(tx - nx, ty - ny));
+      if (d < 18) return;
+      const fx = nx + Math.cos(ang) * d, fy = ny + Math.sin(ang) * d;
+      c.save(); c.translate(fx, fy); c.rotate(ang);
+      c.fillStyle = TINTA; c.beginPath(); c.moveTo(14, 0); c.lineTo(-8, -10); c.lineTo(-8, 10); c.closePath(); c.fill();
+      c.fillStyle = COLORES_J[j.num]; c.beginPath(); c.moveTo(10, 0); c.lineTo(-5, -7); c.lineTo(-5, 7); c.closePath(); c.fill();
+      c.restore();
+    });
     texto(c, Math.max(0, Math.ceil(this.DUR - this.t)) + ' s', 480, 80, 18, '#ffffff');
   }
 };
@@ -1407,7 +1449,7 @@ const mjEquilibrio = {
     mj.jug.forEach((j) => {
       if (!j.vivo) { j.vy -= 20 * dt; j.y += j.vy * dt; j.x += j.vx * dt; j.z += j.vz * dt; return; }
       let ax, az;
-      if (j.humano) { ax = inclinaX(j.num); az = -inclinaY(j.num); }
+      if (j.humano) { ax = zonaMuerta(ax_(j.num), 0.1); az = zonaMuerta(ay_(j.num), 0.1); }
       else {
         j.botT -= dt;
         if (j.botT <= 0) { // decide cada rato, con algo de torpeza
@@ -1472,7 +1514,7 @@ const mjPintar = {
     this.t += dt;
     mj.jug.forEach((j) => {
       let dx, dy;
-      if (j.humano) { dx = ejeX(j.num); dy = ejeY(j.num); }
+      if (j.humano) { dx = zonaMuerta(ax_(j.num), 0.12); dy = zonaMuerta(ay_(j.num), 0.12); }
       else {
         j.botT -= dt;
         if (j.botT <= 0 || !j.botObj) { // busca una zona cercana que no sea suya
@@ -1490,9 +1532,9 @@ const mjPintar = {
         if (Math.hypot(dx, dy) < 10) j.botT = 0;
       }
       const largo = Math.hypot(dx, dy) || 1;
-      j.moviendo = largo > 0.5;
+      j.moviendo = j.humano ? largo > 0.05 && (Math.abs(dx) + Math.abs(dy)) > 0 : largo > 0.5;
       if (j.moviendo) {
-        const vel = j.humano ? 250 : 215;
+        const vel = j.humano ? 250 * Math.min(1, largo) : 215;
         j.x = limitar(j.x + dx / largo * vel * dt, this.X0 + 8, this.X0 + this.COL * this.TAM - 8);
         j.y = limitar(j.y + dy / largo * vel * dt, this.Y0 + 8, this.Y0 + this.FIL * this.TAM - 8);
         if (Math.abs(dx) > 0.5) j.mira = Math.sign(dx);
@@ -1631,6 +1673,13 @@ const mjAliens = {
 };
 
 const MINIJUEGOS = [mjDuelo, mjMeteoros, mjPolvo, mjTractor, mjMemoria, mjSumo, mjHex, mjTunel, mjCohetes, mjEquilibrio, mjPintar, mjAliens];
+// Qué control muestra el celular en cada minijuego: joystick, cruceta, solo el botón, inclinar o agitar
+const CONTROL_MJ = {
+  duelo: { control: 'boton' }, meteoros: { control: 'stick' }, polvo: { control: 'stick' }, tractor: { control: 'boton' },
+  memoria: { control: 'cruz' }, sumo: { control: 'stick', boton: true }, hex: { control: 'stick' }, tunel: { control: 'inclinar' },
+  cohetes: { control: 'agitar', boton: true }, equilibrio: { control: 'inclinar' }, pintar: { control: 'stick' }, aliens: { control: 'cruz', boton: true }
+};
+MINIJUEGOS.forEach((m) => Object.assign(m, CONTROL_MJ[m.id]));
 
 /* --- Controles táctiles (celular) para J1 --- */
 function conectarTactil() {

@@ -5,8 +5,9 @@
 :root { --c-color: #a06bff; }
 
 body.control {
-  overflow: auto;
-  min-height: 100%;
+  overflow: hidden;
+  height: 100vh;
+  height: 100dvh;
   display: flex; flex-direction: column;
   color: var(--blanco);
   touch-action: manipulation;
@@ -17,14 +18,14 @@ body.control {
 .c-cabecera {
   display: flex; align-items: center; justify-content: space-between;
   gap: 10px;
-  padding: 10px 14px;
+  padding: 4px 14px;
   background: var(--c-color);
   border-bottom: var(--borde);
 }
 .c-jugador { font-family: var(--fuente-pixel); font-size: .8rem; text-transform: uppercase; text-shadow: 2px 2px 0 var(--tinta); }
-.c-cabecera .sprite { width: 48px; }
+.c-cabecera .sprite { width: 36px; }
 
-.c-zona { flex: 1; display: flex; padding: 18px; }
+.c-zona { flex: 1; min-height: 0; display: flex; padding: 10px 14px; position: relative; }
 .c-vista { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; text-align: center; }
 .c-vista[hidden] { display: none; }
 
@@ -110,3 +111,66 @@ body.embebido .c-botones .boton { padding: 10px; font-size: .8rem; }
 body.embebido .c-cruz { grid-template-columns: repeat(3, 54px); grid-template-rows: repeat(3, 54px); }
 body.embebido .c-a { width: 80px; height: 80px; }
 .c-botones .boton.elegido { box-shadow: 0 0 0 4px var(--blanco), var(--sombra); }
+
+/* ---- Diseño sin scroll: textos al centro y controles en las esquinas de abajo ---- */
+.c-juego { position: relative; }
+.c-centro {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px;
+  width: 100%; height: 100%; overflow-y: auto; text-align: center;
+}
+.c-botones { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; width: min(560px, 100%); }
+.c-botones .c-chico { font-size: .7rem; padding: 8px; justify-self: center; width: auto; }
+.c-listo-mj { font-size: 1rem; padding: 14px 30px; }
+.c-listo-mj[hidden] { display: none; }
+
+.c-mando { position: absolute; inset: 0; pointer-events: none; display: block; margin: 0; }
+.c-mando .c-izq { position: absolute; left: 14px; bottom: 14px; pointer-events: auto; }
+.c-mando .c-a { position: absolute; right: 18px; bottom: 18px; pointer-events: auto; }
+.c-mando [hidden] { display: none !important; }
+.c-mando.solo-a .c-izq { display: none; }
+/* Con controles en pantalla, el texto deja libres las esquinas */
+body.con-mando .c-centro { justify-content: flex-start; padding: 0 190px; }
+
+/* Joystick */
+.c-stick {
+  position: relative;
+  width: 150px; height: 150px; border-radius: 50%;
+  background: rgba(255, 246, 224, .14);
+  border: var(--borde);
+  box-shadow: inset 0 0 0 10px rgba(255, 255, 255, .06);
+  touch-action: none;
+}
+.c-stick-bola {
+  position: absolute; left: 50%; top: 50%;
+  width: 66px; height: 66px; margin: -33px 0 0 -33px;
+  border-radius: 50%;
+  background: var(--c-color);
+  border: var(--borde);
+  box-shadow: 3px 3px 0 var(--tinta);
+  pointer-events: none;
+}
+
+/* Vertical: el texto arriba y los controles abajo */
+@media (orientation: portrait) {
+  body.con-mando .c-centro { padding: 0 0 220px; }
+}
+/* Pantallas bajitas (celular en horizontal): todo más compacto */
+@media (max-height: 500px) {
+  .c-jugador { font-size: .6rem; }
+  .c-logo { font-size: 1.3rem; }
+  .c-titulo { font-size: .8rem; margin: 0; }
+  .c-sub { font-size: .85rem; }
+  .c-telefono { width: 34px; height: 58px; }
+  .c-barra { width: 160px; height: 14px; }
+  .c-botones .boton { padding: 10px; font-size: .75rem; }
+  .c-botones .c-grande { padding: 22px 10px; font-size: 1.1rem; }
+  .c-cruz { grid-template-columns: repeat(3, 54px); grid-template-rows: repeat(3, 54px); }
+  .c-a { width: 92px; height: 92px; }
+  .c-stick { width: 130px; height: 130px; }
+  .c-campo input { font-size: 1.1rem; padding: 6px; }
+  .c-vista { gap: 10px; }
+  .c-sensor .boton { padding: 8px; font-size: .75rem; }
+}
+
+.c-pausa { margin-left: auto; font-family: var(--fuente-pixel); font-size: .5rem; padding: 6px 10px; border: 3px solid var(--tinta); background: var(--crema); color: var(--tinta); }
+.c-pausa[hidden] { display: none; }

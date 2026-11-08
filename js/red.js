@@ -124,6 +124,7 @@ function dibujarSala() {
 
 // Los celulares conectados quedan como J1, J2... en orden (los demás puestos son bots)
 function empezarOnline() {
+  RED.votos = {};
   const conectados = RED.mandos.filter(Boolean);
   if (!conectados.length) return;
   RED.mandos = Array.from({ length: 8 }, (_, i) => conectados[i] || null);
@@ -190,21 +191,100 @@ function mandoPerdido(conn) {
 }
 
 /* ---------- 3. QUÉ MUESTRA CADA CELULAR ---------- */
+// El líder es el celular conectado con el número más bajo (normalmente J1): maneja la sala y la partida
+const esLider = (num) => RED.mandos.findIndex(Boolean) === num;
+const RONDAS_OPC = [6, 10, 15, 20];
+
+// Votación del mapa: cada celular elige un mundo o "Al azar"
+RED.votos = {};
+function votarMundo(num, opcion) {
+  if (estado.pantalla !== 'mundos') return;
+  RED.votos[num] = opcion;
+  sonar('elegir');
+  dibujarVotos();
+  const humanos = estado.jugadores.filter((j) => j.humano && RED.mandos[j.num]);
+  if (humanos.every((j) => RED.votos[j.num] !== undefined)) resolverVotos();
+}
+function dibujarVotos() {
+  document.querySelectorAll('.tarjeta-mundo').forEach((t, i) => {
+    let caja = t.querySelector('.votos');
+    if (!caja) { caja = document.createElement('span'); caja.className = 'votos'; t.appendChild(caja); }
+    caja.textContent = '';
+    Object.entries(RED.votos).forEach(([num, op]) => {
+      if (op !== i) return;
+      const v = document.createElement('i');
+      v.className = 'voto color-j' + (Number(num) + 1);
+      v.textContent = 'J' + (Number(num) + 1);
+      caja.appendChild(v);
+    });
+  });
+  const azar = Object.entries(RED.votos).filter(([, op]) => op === 'azar').map(([n]) => 'J' + (Number(n) + 1));
+  $('btn-azar').textContent = azar.length ? 'Al azar (' + azar.join(' ') + ')' : 'Al azar';
+}
+function resolverVotos() {
+  const votos = Object.values(RED.votos);
+  RED.votos = {};
+  const conMundo = votos.filter((v) => v !== 'azar');
+  if (!conMundo.length) { // todos al azar: sorteo y empieza de una
+    mundoAlAzar();
+    setTimeout(() => { if (estado.pantalla === 'mundos') iniciarPartida(); }, animacionesReducidas() ? 500 : 2600);
+    return;
+  }
+  const cuenta = {};
+  conMundo.forEach((v) => { cuenta[v] = (cuenta[v] || 0) + 1; });
+  const max = Math.max(...Object.values(cuenta));
+  const empatados = Object.keys(cuenta).filter((k) => cuenta[k] === max).map(Number);
+  const ganador = empatados[Math.floor(Math.random() * empatados.length)];
+  seleccionarMundo(ganador, true);
+  aviso('Ganó la votación: ' + MUNDOS[ganador].nombre);
+  setTimeout(() => { if (estado.pantalla === 'mundos') iniciarPartida(); }, 1500);
+}
+
 function vistaDe(num) {
   const j = estado.jugadores[num];
   const pj = j && j.elegido !== null && j.elegido !== undefined ? PERSONAJES[j.elegido] : null;
   const base = { pj: pj ? pj.id : null, nombre: pj ? pj.nombre : null };
   const espera = (texto, sub) => Object.assign({ vista: 'espera', texto, sub }, base);
   const p = estado.partida;
-  if (estado.pantalla === 'sala') return espera('¡Conectado!', 'Eres el jugador ' + (num + 1) + '. Espera a que empiece la partida.');
+  if (estado.pantalla === 'sala') {
+    if (esLider(num)) {
+      const n = RED.mandos.filter(Boolean).length;
+      return Object.assign({
+        vista: 'botones', texto: 'Eres el líder', sub: 'Cuando estén todos, toca Empezar. Hay ' + n + ' celular' + (n > 1 ? 'es' : '') + ' conectado' + (n > 1 ? 's' : '') + '.',
+        botones: [{ texto: '¡Empezar!' }, { texto: 'Jugadores: ' + estado.total }, { texto: 'Rondas: ' + estado.rondas }],
+        acciones: [empezarOnline,
+          () => { estado.total = estado.total === 8 && n <= 4 ? 4 : 8; sonar('clic'); }, // con más de 4 celulares siempre son 8
+          () => { const i = RONDAS_OPC.indexOf(estado.rondas); elegirRondas(RONDAS_OPC[(i + 1) % RONDAS_OPC.length]); estado.rondasElegidas = true; }]
+      }, base);
+    }
+    return espera('¡Conectado!', 'Eres el jugador ' + (num + 1) + '. El líder (J' + (RED.mandos.findIndex(Boolean) + 1) + ') empieza la partida desde su celular.');
+  }
   if (estado.pantalla === 'personajes') {
     if (!j || j.elegido === null) return Object.assign({ vista: 'mando', texto: 'Elige tu personaje', sub: 'Cruceta para moverte y A para elegir.' }, base);
     return Object.assign({ vista: 'botones', texto: '¡Listo!', sub: 'Esperando a los demás...', botones: [{ texto: 'Cambiar personaje' }], acciones: [() => quitar(num)] }, base);
   }
-  if (estado.pantalla === 'mundos') return espera('Eligiendo el mundo', 'Mira la pantalla grande.');
+  if (estado.pantalla === 'mundos') {
+    if (RED.votos[num] === undefined) {
+      return Object.assign({ vista: 'botones', texto: 'Vota el mundo', sub: 'Gana el más votado. Si todos eligen Al azar, ¡empieza de una!',
+        botones: MUNDOS.map((m) => ({ texto: m.nombre })).concat([{ texto: 'Al azar' }]),
+        acciones: MUNDOS.map((m, i) => () => votarMundo(num, i)).concat([() => votarMundo(num, 'azar')]) }, base);
+    }
+    const v = RED.votos[num];
+    return espera('¡Votaste!', (v === 'azar' ? 'Al azar' : MUNDOS[v].nombre) + '. Esperando a los demás...');
+  }
   if (estado.pantalla !== 'juego' || !p) return espera('Nebula Party', 'El anfitrión está en el menú.');
-  if (!$('capa-podio').hidden) return espera($('podio-titulo').textContent, 'Fin de la partida.');
-  if (pausado()) return espera('Pausa', 'El juego está en pausa.');
+  if (!$('capa-podio').hidden) {
+    if (esLider(num)) return Object.assign({ vista: 'botones', texto: $('podio-titulo').textContent, sub: '¿Qué hacemos?',
+      botones: [{ texto: 'Jugar otra vez' }, { texto: 'Volver a la sala' }],
+      acciones: [() => { cerrarVentana('capa-podio'); iniciarPartida(); }, () => { cerrarVentana('capa-podio'); abrirSala(); }] }, base);
+    return espera($('podio-titulo').textContent, 'Fin de la partida. El líder elige qué sigue.');
+  }
+  if (pausado()) {
+    if (esLider(num)) return Object.assign({ vista: 'botones', texto: 'Pausa', sub: 'El juego está en pausa.',
+      botones: [{ texto: 'Continuar' }, { texto: 'Volver a la sala' }],
+      acciones: [cerrarPausa, () => { cerrarVentana('capa-pausa'); cerrarMinijuego(); abrirSala(); }] }, base);
+    return espera('Pausa', 'El líder puede continuar desde su celular.');
+  }
   if (MJ.activo) {
     const juega = MJ.jug.find((x) => x.num === num);
     if (!juega) { // no juega este minijuego (duelo): puede apostar
@@ -218,9 +298,14 @@ function vistaDe(num) {
       return espera(MJ.modo === 'duelo' ? 'Mirando el duelo' : 'Mirando el minijuego', porQuien ? 'Apostaste por ' + porQuien.pj.nombre + '.' : 'Mira la pantalla grande.');
     }
     if (MJ.fase === 'ruleta' || !MJ.def) return espera('¡Minijuego!', 'Girando la ruleta...');
-    let sub = MJ.fase === 'intro' ? 'Pulsa A cuando estés listo.' : MJ.fase === 'resultados' ? 'Pulsa A para continuar.' : MJ.def.controles;
+    const i = MJ.jug.indexOf(juega);
+    const listo = MJ.fase === 'intro' && MJ.datos && MJ.datos.listos && MJ.datos.listos[i];
+    let sub = MJ.fase === 'intro' ? (listo ? '¡Listo! Sigue practicando mientras los demás terminan.' : 'Practica los controles y toca LISTO cuando quieras empezar.')
+      : MJ.fase === 'resultados' ? 'Toca A para continuar.' : MJ.def.controles;
     if (MJ.def.ayudaMando && MJ.fase !== 'intro' && MJ.fase !== 'resultados') sub = MJ.def.ayudaMando(juega);
-    return Object.assign({ vista: 'mando', texto: MJ.def.nombre, sub, fase: MJ.fase, inclinar: !!MJ.def.inclinar, agitar: !!MJ.def.agitar }, base);
+    return Object.assign({ vista: 'mando', texto: MJ.def.nombre, sub, fase: MJ.fase, control: MJ.fase === 'resultados' ? 'boton' : MJ.def.control,
+      boton: MJ.fase === 'resultados' || !!MJ.def.boton || MJ.def.control === 'boton', listo: !!listo,
+      inclinar: MJ.def.control === 'inclinar', agitar: MJ.def.control === 'agitar' }, base);
   }
   if (juego.fase === 'reto' && juego.reto && juego.reto.j.num === num) {
     return Object.assign({ vista: 'reto', texto: '¡Atrapa la estrella!', sub: 'Toca justo cuando la flecha esté en lo verde.', botones: [{ texto: '¡ATRAPAR!' }], acciones: [atrapar] }, base);
@@ -234,7 +319,9 @@ function vistaDe(num) {
       acciones: botones.map((b) => b.accion)
     }, base);
   }
-  return espera($('texto-turno').textContent, actual && actual.num === num ? 'Mira la pantalla grande.' : 'Turno de ' + (actual ? actual.pj.nombre : '...'));
+  const v = espera($('texto-turno').textContent, actual && actual.num === num ? 'Mira la pantalla.' : 'Turno de ' + (actual ? actual.pj.nombre : '...'));
+  if (esLider(num) && !MJ.activo) v.pausa = true; // el líder ve un botón chico de Pausa en la esquina
+  return v;
 }
 
 // Se manda a cada celular solo cuando su pantalla cambia
@@ -271,6 +358,16 @@ function datoDeMando(conn, d) {
     if (d.v !== RED.version[num]) return; // botón de una pantalla vieja
     const f = RED.acciones[num][d.i];
     if (f) f();
+  } else if (d.tipo === 'stick') { // joystick (-1 a 1)
+    if (!MJ.activo) return;
+    const m = mando[num];
+    m.stickX = Math.max(-1, Math.min(1, Number(d.x) || 0));
+    m.stickY = Math.max(-1, Math.min(1, Number(d.y) || 0));
+    m.usaStick = true;
+  } else if (d.tipo === 'pausa') { // botón de pausa del líder
+    if (esLider(num) && estado.pantalla === 'juego') abrirPausa();
+  } else if (d.tipo === 'listo') { // botón LISTO de la práctica
+    if (MJ.activo) marcarListo(num);
   } else if (d.tipo === 'inclinar') { // inclinación ya centrada en el celular (-1 a 1)
     if (!MJ.activo) return;
     const m = mando[num];

@@ -1,5 +1,5 @@
 /* =========================================================
-   NEBULA PARTY - script.js  (v1.0: multijugador a distancia; ver agitar.js, minijuegos.js, red.js y espejo.js)
+   NEBULA PARTY - script.js  (v1.1: todo desde los celulares; ver agitar.js, minijuegos.js, red.js y espejo.js)
    Índice:
    1. Datos            2. Estado          3. Utilidades
    4. Pantallas        5. Fondo estrellas 6. Menú
@@ -486,6 +486,8 @@ function revisarListos() {
   if (todos && !yaEstaba) {
     sonar('listo');
     aviso('¡Todos listos! Ahora elige el mundo.');
+    // Con celulares no hay que tocar el portátil: pasa solo a votar el mundo
+    if (estado.modo === 'online') setTimeout(() => { if (estado.pantalla === 'personajes' && !boton.disabled) irAMundos(); }, 1500);
   }
 }
 
@@ -511,6 +513,7 @@ function irAMundos() {
   if ($('btn-ir-mundos').disabled) return;
   sonar('clic');
   seleccionarMundo(estado.mundo, false);
+  if (typeof RED !== 'undefined') { RED.votos = {}; dibujarVotos(); } // votación desde los celulares (red.js)
   cambiarPantalla('mundos');
 }
 

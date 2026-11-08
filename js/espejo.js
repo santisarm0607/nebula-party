@@ -298,6 +298,7 @@ function teclaEspejo(e, baja) {
   const boton = TECLAS_ESPEJO[e.code];
   if (boton) { e.preventDefault(); if (!e.repeat || !baja) aControl({ boton, baja }); return; }
   if (!baja) return;
+  if (e.code === 'KeyL') { aControl({ listo: true }); return; } // LISTO de la práctica
   if (/^Digit[1-9]$/.test(e.code)) { aControl({ boton: 'accion', baja: true, opcion: Number(e.code.slice(5)) - 1 }); return; }
   if (estado.pantalla === 'juego' && !MJ.activo) {
     const t = e.key.toLowerCase();

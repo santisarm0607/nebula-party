@@ -759,6 +759,25 @@ body.espejo #btn-pausa, body.espejo .mj-tactil, body.espejo #btn-mj-empezar, bod
 .mj-res .mj-premio { font-family: var(--fuente-pixel); font-size: .65rem; color: #b07a00; min-width: 42px; text-align: right; }
 .mj-res.lugar-1 { background: #fff2b8; }
 
+/* Instrucciones durante la PRÁCTICA: panel compacto abajo para ver el juego detrás */
+#mj-intro {
+  top: auto; bottom: 10px; transform: translateX(-50%);
+  width: min(820px, 96vw); max-height: 46vh;
+  padding: 12px 16px; gap: 6px;
+  background: rgba(59, 45, 158, .94);
+}
+#mj-intro h2 { font-size: clamp(.8rem, 2vw, 1.1rem); }
+#mj-intro .mj-frase { font-size: .9rem; }
+#mj-intro .mj-controles { flex-direction: row; flex-wrap: wrap; justify-content: center; gap: 6px; }
+#mj-intro .mj-controles li { padding: 2px 8px 2px 2px; font-size: .8rem; }
+#mj-intro .mj-controles li.listo { background: #b8ffcf; }
+#mj-intro .mj-controles li.listo::after { content: "¡LISTO!"; font-family: var(--fuente-pixel); font-size: .5rem; color: #138a43; margin-left: 6px; }
+
+/* Votos de cada mundo (los celulares votan) */
+.tarjeta-mundo { position: relative; }
+.votos { display: flex; flex-wrap: wrap; gap: 4px; justify-content: center; min-height: 0; }
+.voto { font-style: normal; font-family: var(--fuente-pixel); font-size: .5rem; color: var(--blanco); padding: 3px 5px; border: 2px solid var(--tinta); text-shadow: 1px 1px 0 var(--tinta); }
+
 /* Controles táctiles: solo en pantallas sin ratón */
 .mj-tactil { display: none; }
 .mj-tactil.oculto { display: none !important; }
