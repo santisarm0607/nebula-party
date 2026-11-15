@@ -2157,6 +2157,7 @@ function cerrarPausa() { sonar('clic'); cerrarVentana('capa-pausa'); }
 
 function abrirOpciones() {
   $('op-volumen').value = estado.opciones.volumen;
+  $('op-volumen-valor').textContent = estado.opciones.volumen + '%';
   $('op-animaciones').checked = estado.opciones.sinAnimaciones;
   $('op-agitar').checked = estado.opciones.agitar;
   $('btn-permiso-sensor').hidden = !Agitar.necesitaPermiso();
@@ -2309,7 +2310,14 @@ function conectarEventos() {
   $('btn-pantalla-completa').addEventListener('click', pantallaCompleta);
   $('btn-pantalla-menu').hidden = !document.fullscreenEnabled;
   $('btn-pantalla-menu').addEventListener('click', () => { sonar('clic'); pantallaCompleta(); });
-  $('op-volumen').addEventListener('input', (e) => { estado.opciones.volumen = Number(e.target.value); aplicarOpciones(); });
+  $('op-volumen').addEventListener('input', (e) => { estado.opciones.volumen = Number(e.target.value); $('op-volumen-valor').textContent = e.target.value + '%'; aplicarOpciones(); });
+  // Pestañas de Cómo jugar
+  document.querySelectorAll('[data-pestana]').forEach((b) => b.addEventListener('click', () => {
+    sonar('clic');
+    const i = Number(b.dataset.pestana);
+    document.querySelectorAll('[data-pestana]').forEach((x) => x.setAttribute('aria-selected', String(x === b)));
+    document.querySelectorAll('.panel-como').forEach((p, k) => { p.hidden = k !== i; });
+  }));
   $('op-volumen').addEventListener('change', () => sonar('clic'));
   $('op-animaciones').addEventListener('change', (e) => { estado.opciones.sinAnimaciones = e.target.checked; aplicarOpciones(); });
   $('op-agitar').addEventListener('change', (e) => { estado.opciones.agitar = e.target.checked; aplicarOpciones(); if (!e.target.checked) Agitar.parar(); });

@@ -47,7 +47,7 @@
     </nav>
 
     <p class="ayuda-pixel">Flechas para moverte · Enter para elegir · O usa el ratón</p>
-    <p class="version" id="version">v1.2.1 · 12 minijuegos · QR + multijugador a distancia</p>
+    <p class="version" id="version">v1.2.2 · 12 minijuegos · QR + multijugador a distancia</p>
   </section>
 
   <!-- ===================== 1B. ESCOGER MODO ===================== -->
@@ -283,23 +283,27 @@
   </div>
 
   <div class="capa" id="capa-opciones" role="dialog" aria-modal="true" aria-labelledby="titulo-opciones" hidden>
-    <div class="ventana">
+    <div class="ventana ventana-ajustes">
       <h2 id="titulo-opciones">Ajustes</h2>
-      <label class="opcion">
-        <span>Volumen de efectos</span>
-        <input type="range" id="op-volumen" min="0" max="100" step="5">
-      </label>
-      <label class="opcion opcion-fila">
-        <input type="checkbox" id="op-animaciones">
-        <span>Reducir animaciones</span>
-      </label>
-      <label class="opcion opcion-fila">
-        <input type="checkbox" id="op-agitar">
-        <span>Lanzar el dado agitando el celular</span>
-      </label>
+      <div class="ajustes">
+        <label class="ajuste" for="op-volumen">
+          <span class="ajuste-texto"><b>Volumen de efectos</b><small id="op-volumen-valor">70%</small></span>
+          <input type="range" id="op-volumen" min="0" max="100" step="5">
+        </label>
+        <label class="ajuste" for="op-animaciones">
+          <span class="ajuste-texto"><b>Reducir animaciones</b><small>Menos movimiento y destellos</small></span>
+          <input type="checkbox" class="interruptor" id="op-animaciones">
+        </label>
+        <label class="ajuste" for="op-agitar">
+          <span class="ajuste-texto"><b>Agitar para lanzar</b><small>El dado se lanza agitando el celular</small></span>
+          <input type="checkbox" class="interruptor" id="op-agitar">
+        </label>
+      </div>
       <button class="boton b-cian" id="btn-permiso-sensor" hidden>Activar sensor (iPhone)</button>
-      <button class="boton b-crema" id="btn-pantalla-completa">Pantalla completa</button>
-      <button class="boton b-verde" id="btn-cerrar-opciones">Listo</button>
+      <div class="ventana-botones">
+        <button class="boton b-crema" id="btn-pantalla-completa">Pantalla completa</button>
+        <button class="boton b-verde" id="btn-cerrar-opciones">Listo</button>
+      </div>
     </div>
   </div>
 
@@ -317,16 +321,69 @@
   </div>
 
   <div class="capa" id="capa-como" role="dialog" aria-modal="true" aria-labelledby="titulo-como" hidden>
-    <div class="ventana ventana-texto">
+    <div class="ventana ventana-como">
       <h2 id="titulo-como">Cómo jugar</h2>
-      <p>Cada ronda, los jugadores lanzan el dado y avanzan por el tablero.</p>
-      <p>Las casillas azules dan 3 monedas, las rojas quitan 3 y las verdes (!) traen una carta sorpresa. El rombo activa la regla del mundo.</p>
-      <p>Una estrella fugaz cae en el mapa y salta a otro lugar cada ronda. Si caes o pasas por ella, presiona justo en la zona verde para atraparla. Con 10 monedas usas la Red grande.</p>
-      <p>Los observatorios (casillas amarillas) muestran la estrella y por 8 monedas te teletransportan cerca. Gana quien tenga más estrellas; si empatan, más monedas.</p>
-      <p>Multijugador: el anfitrión toca "Invitar a distancia" y manda el enlace; cada invitado ve el juego en su pantalla y juega con el control de abajo. Todos en una pantalla: la pantalla grande muestra un QR. Cada jugador lo escanea con su celular y lo usa como control. En tu turno, agita el celular para lanzar el dado.</p>
-      <p>Casilla naranja (VS): duelo 1 contra 1 contra quien elijas; el ganador le quita 5 monedas al otro. Carta "Minijuego relámpago": todos juegan en ese momento y el ganador gana 5 monedas.</p>
-      <p>Al final de cada ronda una ruleta escoge uno de 12 minijuegos (2D con objetos 3D y 3D). Premios: 1.º +10 monedas, 2.º +6 y 3.º +3. Controles: J1 W A S D + Espacio, J2 flechas + Enter, J3 I J K L + O, J4 numérico 8 4 5 6 + 0. En celular salen botones en pantalla.</p>
-      <p><b>Controles:</b> J1 con W A S D y Espacio. J2 con flechas y Enter. Esc o P para pausar.</p>
+      <div class="pestanas" role="tablist">
+        <button class="pestana" role="tab" data-pestana="0" aria-selected="true">Tablero</button>
+        <button class="pestana" role="tab" data-pestana="1" aria-selected="false">Casillas</button>
+        <button class="pestana" role="tab" data-pestana="2" aria-selected="false">Minijuegos</button>
+        <button class="pestana" role="tab" data-pestana="3" aria-selected="false">Modos</button>
+        <button class="pestana" role="tab" data-pestana="4" aria-selected="false">Controles</button>
+      </div>
+
+      <div class="panel-como" role="tabpanel">
+        <ol class="pasos">
+          <li><b>1</b><span>En tu turno <b>agita el celular</b> (o toca el botón) y lanza el dado de 10 caras.</span></li>
+          <li><b>2</b><span>Avanzas casilla por casilla. En los <b>atajos rojos</b> eliges por dónde seguir.</span></li>
+          <li><b>3</b><span>Atrapa la <b>estrella fugaz</b>: si pasas por ella, toca justo en la zona verde.</span></li>
+          <li><b>4</b><span>Al final de cada ronda hay un <b>minijuego</b> que da monedas.</span></li>
+        </ol>
+        <p class="meta">🏆 Gana quien tenga más <b>estrellas</b>. Si empatan, más monedas.</p>
+      </div>
+
+      <div class="panel-como" role="tabpanel" hidden>
+        <ul class="lista-casillas">
+          <li><span class="cas" style="background:#3d8bff">+</span><span><b>Azul</b>+3 monedas</span></li>
+          <li><span class="cas" style="background:#ff4d5e">−</span><span><b>Roja</b>−3 monedas</span></li>
+          <li><span class="cas" style="background:#3ddc7a">!</span><span><b>Evento</b>Carta sorpresa (¡a veces minijuego relámpago!)</span></li>
+          <li><span class="cas" style="background:#ffd23f">◉</span><span><b>Observatorio</b>Muestra la estrella; por 8 monedas te acerca</span></li>
+          <li><span class="cas" style="background:#ff8a3d">VS</span><span><b>Duelo</b>1 contra 1: el ganador le quita 5 monedas al otro</span></li>
+          <li><span class="cas" style="background:#bff0ff">◆</span><span><b>Regla del mundo</b>Hielo, lianas, erupción o casino</span></li>
+        </ul>
+        <p class="meta">⭐ Red grande: por 10 monedas la zona verde de la estrella es el doble.</p>
+      </div>
+
+      <div class="panel-como" role="tabpanel" hidden>
+        <ul class="lista-simple">
+          <li><b>De ronda</b><span>Al final de cada ronda. Premios +10, +6, +3.</span></li>
+          <li><b>Duelo</b><span>Al caer en la casilla VS, contra quien elijas. Los demás apuestan.</span></li>
+          <li><b>Relámpago</b><span>Sale en una carta de evento. El ganador se lleva 5.</span></li>
+        </ul>
+        <p class="meta">🎮 Antes de cada uno hay una <b>práctica</b>: empieza cuando todos tocan LISTO.</p>
+      </div>
+
+      <div class="panel-como" role="tabpanel" hidden>
+        <ul class="lista-simple">
+          <li><b>Prueba con bots</b><span>Tú contra 3 o 7 bots.</span></li>
+          <li><b>Todos en una pantalla</b><span>Escanean el QR y el celular es el control (hasta 8).</span></li>
+          <li><b>Multijugador</b><span>Cada uno desde su casa con el enlace de "Invitar a distancia".</span></li>
+        </ul>
+      </div>
+
+      <div class="panel-como" role="tabpanel" hidden>
+        <table class="tabla-controles">
+          <thead><tr><th></th><th>Moverse</th><th>Acción</th></tr></thead>
+          <tbody>
+            <tr><td><span class="mj-color color-j1">J1</span></td><td>W A S D</td><td>Espacio</td></tr>
+            <tr><td><span class="mj-color color-j2">J2</span></td><td>Flechas</td><td>Enter</td></tr>
+            <tr><td><span class="mj-color color-j3">J3</span></td><td>I J K L</td><td>O</td></tr>
+            <tr><td><span class="mj-color color-j4">J4</span></td><td>Numérico 8 4 5 6</td><td>0</td></tr>
+            <tr><td>📱</td><td>Joystick / cruceta / inclinar</td><td>Botón A / agitar</td></tr>
+          </tbody>
+        </table>
+        <p class="meta">Esc o P pausa · M ver mapa · C centrar · + / − zoom</p>
+      </div>
+
       <button class="boton b-verde" data-cerrar>Entendido</button>
     </div>
   </div>

@@ -948,3 +948,76 @@ body.sin-animaciones .carta.entra { animation: none !important; }
 .boton-pantalla svg { width: 100%; height: 100%; }
 .boton-pantalla:hover { border-color: var(--blanco); }
 .boton-pantalla[hidden] { display: none; }
+
+/* ---------- MENÚS: Cómo jugar y Ajustes ---------- */
+.ventana h2 { font-size: clamp(1rem, 2.4vw, 1.4rem); }
+.ventana-botones { display: flex; gap: 12px; }
+.ventana-botones .boton { flex: 1; }
+
+/* Ajustes: cada fila con el texto a la izquierda y el control a la derecha */
+.ventana.ventana-ajustes { width: min(480px, 100%); }
+.ajustes { display: flex; flex-direction: column; gap: 10px; }
+.ajuste {
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  background: var(--crema); border: 3px solid var(--tinta); box-shadow: 4px 4px 0 var(--tinta);
+  padding: 12px 14px; text-align: left; cursor: pointer;
+}
+.ajuste-texto { display: flex; flex-direction: column; gap: 2px; }
+.ajuste-texto b { font-weight: 900; font-size: 1rem; color: var(--tinta); }
+.ajuste-texto small { font-weight: 700; font-size: .82rem; color: #5b5490; }
+.ajuste input[type="range"] { width: 45%; accent-color: var(--rosa); }
+/* Interruptor pixel */
+.interruptor {
+  appearance: none; -webkit-appearance: none; flex: none;
+  width: 56px; height: 28px; margin: 0;
+  background: #b9b3d9; border: 3px solid var(--tinta); position: relative; cursor: pointer;
+}
+.interruptor::after {
+  content: ""; position: absolute; top: 2px; left: 2px; width: 18px; height: 18px;
+  background: var(--blanco); border: 2px solid var(--tinta);
+  transition: transform .12s steps(2);
+}
+.interruptor:checked { background: var(--verde); }
+.interruptor:checked::after { transform: translateX(28px); }
+
+/* Cómo jugar: pestañas cortas en vez de un muro de texto */
+.ventana.ventana-como { width: min(720px, 100%); text-align: left; gap: 16px; }
+.ventana-como h2 { text-align: center; }
+.ventana-como > .boton { align-self: center; min-width: 200px; }
+.pestanas { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+.pestana {
+  font-family: var(--fuente-pixel); font-size: .58rem; text-transform: uppercase;
+  padding: 9px 12px; border: 3px solid var(--tinta); background: #5a49c9; color: var(--blanco); cursor: pointer;
+}
+.pestana[aria-selected="true"] { background: var(--amarillo); color: var(--tinta); box-shadow: 0 4px 0 var(--tinta); }
+.panel-como { display: flex; flex-direction: column; gap: 12px; min-height: 250px; }
+.panel-como[hidden] { display: none; }
+.panel-como .meta { margin: 0; color: var(--blanco); font-weight: 800; font-size: .95rem; background: rgba(0, 0, 0, .18); padding: 10px 12px; border-left: 4px solid var(--amarillo); }
+.pasos, .lista-casillas, .lista-simple { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.pasos li, .lista-simple li, .lista-casillas li {
+  display: flex; align-items: center; gap: 12px;
+  background: var(--crema); color: var(--tinta); border: 3px solid var(--tinta);
+  padding: 8px 12px; font-weight: 700; line-height: 1.35;
+}
+.pasos li > b:first-child {
+  flex: none; display: grid; place-items: center; width: 32px; height: 32px;
+  background: var(--rosa); color: var(--blanco); border: 3px solid var(--tinta);
+  font-family: var(--fuente-pixel); font-size: .7rem; text-shadow: 1px 1px 0 var(--tinta);
+}
+.lista-casillas { grid-template-columns: 1fr 1fr; }
+.lista-casillas li span:last-child, .lista-simple li { display: flex; }
+.lista-casillas li span:last-child { flex-direction: column; font-size: .85rem; }
+.lista-casillas b, .lista-simple b { font-weight: 900; }
+.lista-simple li { flex-direction: column; align-items: flex-start; gap: 2px; }
+.cas {
+  flex: none; display: grid; place-items: center; width: 40px; height: 40px;
+  border: 3px solid var(--tinta); box-shadow: 0 4px 0 var(--tinta);
+  font-family: var(--fuente-pixel); font-size: .7rem; color: var(--blanco); text-shadow: 1px 1px 0 var(--tinta);
+}
+.tabla-controles { width: 100%; border-collapse: collapse; background: var(--crema); color: var(--tinta); border: 3px solid var(--tinta); font-weight: 800; }
+.tabla-controles th { font-family: var(--fuente-pixel); font-size: .55rem; text-transform: uppercase; background: var(--amarillo); padding: 8px; text-align: left; border-bottom: 3px solid var(--tinta); }
+.tabla-controles td { padding: 8px; border-top: 2px solid #d9d1f2; }
+@media (max-width: 600px) {
+  .lista-casillas { grid-template-columns: 1fr; }
+  .ventana-botones { flex-direction: column; }
+}

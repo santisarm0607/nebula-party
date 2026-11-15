@@ -125,3 +125,7 @@ Archivo nuevo: js/espejo.js (pantalla del invitado). Se agregó la sección 5 de
 - La pieza que pisas parpadea en rojo y tiembla 1 segundo antes de caer. Desde los 12 s también caen piezas al azar.
 - Botón A para saltar huecos (control: joystick + A).
 - Bots que esperan y cambian de pieza a tiempo, pero a veces se distraen.
+
+## v1.2.2 - Menús Cómo jugar y Ajustes renovados (15/11/2026)
+- Cómo jugar: pestañas (Tablero, Casillas, Minijuegos, Modos, Controles) con pasos, casillas de colores y tabla de controles, en vez de un muro de texto.
+- Ajustes: filas con texto a la izquierda y control a la derecha, interruptores pixel, porcentaje de volumen y botones lado a lado.
