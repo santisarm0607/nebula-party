@@ -29,6 +29,7 @@
 
   <!-- ===================== 1. MENÚ PRINCIPAL ===================== -->
   <section id="pantalla-menu" class="pantalla activa" aria-labelledby="titulo-juego">
+    <button class="boton-pantalla" id="btn-pantalla-menu" aria-label="Pantalla completa"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 9V3h6M15 3h6v6M21 15v6h-6M9 21H3v-6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="square"/></svg></button>
     <header class="menu-cabecera">
       <h1 id="titulo-juego" class="logo">
         <span class="logo-linea" data-texto="Nebula">Nebula</span>
@@ -46,7 +47,7 @@
     </nav>
 
     <p class="ayuda-pixel">Flechas para moverte · Enter para elegir · O usa el ratón</p>
-    <p class="version" id="version">v1.1 · 12 minijuegos · QR + multijugador a distancia</p>
+    <p class="version" id="version">v1.2.1 · 12 minijuegos · QR + multijugador a distancia</p>
   </section>
 
   <!-- ===================== 1B. ESCOGER MODO ===================== -->
@@ -354,6 +355,7 @@
   <!-- PeerJS (conexión con los celulares) y generador de QR -->
   <script src="libs/peerjs.min.js"></script>
   <script src="libs/qrcode.js"></script>
+  <script src="js/red-config.js"></script>
   <script src="js/agitar.js"></script>
   <script src="js/script.js"></script>
   <script src="js/minijuegos.js"></script>

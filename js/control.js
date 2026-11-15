@@ -33,14 +33,19 @@ function mostrarConectar(texto) {
   document.documentElement.style.setProperty('--c-color', '#a06bff');
 }
 
-function conectar(codigo) {
+async function conectar(codigo) {
   codigo = (codigo || '').trim().toUpperCase();
   if (codigo.length !== 4) { mostrarConectar('El código tiene 4 letras. Míralo en la pantalla grande.'); return; }
   if (!window.Peer) { mostrarConectar('No se pudo cargar la conexión. Revisa tu internet.'); return; }
   $c('c-unirme').disabled = true;
   $c('c-estado').textContent = 'Conectando a la sala ' + codigo + '...';
   if (C.peer) C.peer.destroy();
-  C.peer = new Peer(opcionesPeer());
+  C.peer = new Peer(await opcionesConexion(opcionesPeer()));
+  // Si en 15 segundos no conecta, avisa qué hacer
+  const intento = C.peer;
+  setTimeout(() => {
+    if (C.peer === intento && !(C.conn && C.conn.open)) mostrarConectar('No se pudo conectar con la sala ' + codigo + '. Puede que esta red bloquee la conexión: prueba con datos móviles u otro WiFi y toca "Unirme".');
+  }, 15000);
   C.peer.on('open', () => {
     C.conn = C.peer.connect(PREFIJO + codigo, { reliable: true });
     C.conn.on('open', () => { $c('c-estado').textContent = '¡Conectado!'; pedirPantallaEncendida(); });
@@ -313,3 +318,15 @@ $c('c-stick').addEventListener('pointermove', (e) => { if (e.pointerId === S.id)
 ['pointerup', 'pointercancel'].forEach((ev) => $c('c-stick').addEventListener(ev, (e) => { if (e.pointerId === S.id) soltarStick(); }));
 
 $c('c-pausa').addEventListener('click', () => enviar({ tipo: 'pausa' }));
+
+/* --- Pantalla completa (y horizontal en Android) --- */
+function pantallaCompletaControl() {
+  try {
+    if (document.fullscreenElement) { document.exitFullscreen(); return; }
+    document.documentElement.requestFullscreen().then(() => {
+      if (screen.orientation && screen.orientation.lock) screen.orientation.lock('landscape').catch(() => {});
+    }).catch(() => {});
+  } catch (e) { /* el navegador no lo permite */ }
+}
+$c('c-pantalla').hidden = !document.fullscreenEnabled;
+$c('c-pantalla').addEventListener('click', pantallaCompletaControl);

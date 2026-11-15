@@ -114,3 +114,14 @@ Archivo nuevo: js/espejo.js (pantalla del invitado). Se agregó la sección 5 de
 - Túnel: sin rocas, anillos grandes (1 punto) y dorados chicos (3 puntos), imán cerca de los anillos, flecha guía de tu color, zona muerta y suavizado al inclinar.
 - Práctica antes de cada minijuego: se juega de verdad ("PRÁCTICA") hasta que todos tocan LISTO (celular: botón LISTO · teclado: tecla de acción · invitado a distancia en PC: L). Luego empieza de cero.
 - Todos en una pantalla manejado desde los celulares: el líder (primer celular) empieza, cambia jugadores y rondas, pausa y elige qué hacer en el podio. Al terminar de elegir personajes se pasa solo a votar el mundo: gana el más votado y si todos eligen "Al azar" empieza de una.
+
+## v1.2 - Cualquier red y pantalla completa (15/11/2026)
+- js/red-config.js: servidores STUN/TURN (puente) para conectar aunque la red bloquee la conexión directa (WiFi de universidad, operadores). Para máxima estabilidad, poner la app y API key gratis de Metered en CONFIG_RED.
+- Si un celular no conecta en 15 s, avisa que pruebe otra red.
+- Botón de pantalla completa en el menú y en el control del celular (en Android además fija horizontal).
+
+## v1.2.1 - Hexágonos que caen renovado (15/11/2026)
+- Un solo piso más grande (127 hexágonos) y cámara fija desde arriba: siempre se ve todo.
+- La pieza que pisas parpadea en rojo y tiembla 1 segundo antes de caer. Desde los 12 s también caen piezas al azar.
+- Botón A para saltar huecos (control: joystick + A).
+- Bots que esperan y cambian de pieza a tiempo, pero a veces se distraen.

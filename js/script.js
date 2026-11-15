@@ -2307,6 +2307,8 @@ function conectarEventos() {
   $('btn-opciones').addEventListener('click', abrirOpciones);
   $('btn-cerrar-opciones').addEventListener('click', () => { sonar('clic'); cerrarVentana('capa-opciones'); });
   $('btn-pantalla-completa').addEventListener('click', pantallaCompleta);
+  $('btn-pantalla-menu').hidden = !document.fullscreenEnabled;
+  $('btn-pantalla-menu').addEventListener('click', () => { sonar('clic'); pantallaCompleta(); });
   $('op-volumen').addEventListener('input', (e) => { estado.opciones.volumen = Number(e.target.value); aplicarOpciones(); });
   $('op-volumen').addEventListener('change', () => sonar('clic'));
   $('op-animaciones').addEventListener('change', (e) => { estado.opciones.sinAnimaciones = e.target.checked; aplicarOpciones(); });

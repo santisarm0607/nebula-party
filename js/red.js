@@ -41,10 +41,10 @@ function abrirSala() {
   if (!RED.intervalo) RED.intervalo = setInterval(actualizarMandos, 150);
 }
 
-function crearPeer(intento) {
+async function crearPeer(intento) {
   RED.codigo = codigoAzar();
   mensajeSala('Creando la sala...');
-  const peer = new Peer(PREFIJO_SALA + RED.codigo, opcionesPeer());
+  const peer = new Peer(PREFIJO_SALA + RED.codigo, await opcionesConexion(opcionesPeer()));
   RED.peer = peer;
   peer.on('open', () => { mostrarQR(); mensajeSala('Apunta la cámara del celular al código y entra solo a la sala. Los puestos vacíos los juega un bot.'); });
   peer.on('connection', conexionNueva);

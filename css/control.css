@@ -174,3 +174,5 @@ body.con-mando .c-centro { justify-content: flex-start; padding: 0 190px; }
 
 .c-pausa { margin-left: auto; font-family: var(--fuente-pixel); font-size: .5rem; padding: 6px 10px; border: 3px solid var(--tinta); background: var(--crema); color: var(--tinta); }
 .c-pausa[hidden] { display: none; }
+
+.c-cabecera .c-pantalla { position: static; width: 34px; height: 34px; padding: 6px; border-radius: 6px; }

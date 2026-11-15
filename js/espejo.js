@@ -17,7 +17,7 @@ const ESPEJO = {
 const SUAVES = new Set(['x', 'y', 'z', 'h']); // valores que se mueven suave entre fotos
 
 /* ---------- 1. CONEXIÓN ---------- */
-function iniciarEspejo(codigo) {
+async function iniciarEspejo(codigo) {
   ESPEJO.activo = true;
   ESPEJO.codigo = codigo;
   document.body.classList.add('espejo');
@@ -36,7 +36,7 @@ function iniciarEspejo(codigo) {
   $('espejo-caja').hidden = false;
 
   if (!window.Peer) { estadoEspejo('No se pudo cargar la conexión. Revisa tu internet y recarga la página.'); return; }
-  ESPEJO.peer = new Peer(opcionesPeer());
+  ESPEJO.peer = new Peer(await opcionesConexion(opcionesPeer()));
   ESPEJO.peer.on('open', () => {
     const conn = ESPEJO.peer.connect(PREFIJO_SALA + codigo, { reliable: true, metadata: { espejo: true } });
     ESPEJO.conn = conn;

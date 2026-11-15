@@ -1073,113 +1073,122 @@ const mjSumo = {
 // 7. HEXÁGONOS QUE CAEN
 const mjHex = {
   id: 'hex', nombre: 'Hexágonos que caen', corto: 'HEXÁGONOS', tipo: '3D',
-  frase: '3 pisos de hexágonos que se rompen después de pisarlos. Si caes, bajas al piso de abajo. Gana el último que siga en pie.',
-  controles: 'Muévete en las 4 direcciones.',
-  NIVELES: [0, -3.5, -7], COLORES: [0x22d3ee, 0xff5fa2, 0xffd23f],
+  frase: 'Un piso de hexágonos: el que pisas parpadea en rojo y 1 segundo después se cae. Salta con A para cruzar huecos. Gana el último que siga en pie.',
+  controles: 'Joystick para moverte y A para saltar.',
+  RADIO: 6, AVISO: 1, VEL: 3.6, COLORES: [0x22d3ee, 0xa06bff, 0xffd23f, 0x3ddc7a], // sin rosado para no confundir con el aviso rojo
   iniciar(mj) {
-    this.fin = false; this.t = 0;
+    this.fin = false; this.t = 0; this.proxCaida = 12; // las caídas al azar empiezan después
     this.escena = new THREE.Scene(); ponerLuces(this.escena); estrellasFondo(this.escena, 300, 70);
-    this.cam = new THREE.PerspectiveCamera(48, 16 / 9, 0.1, 200);
-    this.camY = 0;
+    // Cámara fija desde arriba: siempre se ve todo el piso
+    this.cam = new THREE.PerspectiveCamera(45, 16 / 9, 0.1, 200);
+    this.cam.position.set(0, 27, 13);
+    this.cam.lookAt(0, -2, 1.2);
     this.piezas = [];
     const geo = new THREE.CylinderGeometry(0.93, 0.93, 0.35, 6);
-    this.NIVELES.forEach((y, n) => {
-      for (let q = -3; q <= 3; q++) for (let r = -3; r <= 3; r++) {
-        if (Math.abs(q + r) > 3) continue;
-        const x = 1.5 * q, z = Math.sqrt(3) * (r + q / 2);
-        const m = new THREE.Mesh(geo, mat(this.COLORES[n], 0x0a0a1a));
-        m.position.set(x, y, z);
-        this.escena.add(m);
-        this.piezas.push({ x, z, nivel: n, y, malla: m, estado: 0, t0: 0, vy: 0 });
-      }
-    });
-    const inicio = enCirculo(mj.jug.length, 2.6, Math.PI / 4);
+    const R = this.RADIO;
+    for (let q = -R; q <= R; q++) for (let r = -R; r <= R; r++) {
+      if (Math.abs(q + r) > R) continue;
+      const x = 1.5 * q, z = Math.sqrt(3) * (r + q / 2);
+      const color = this.COLORES[(Math.abs(q) + Math.abs(r)) % this.COLORES.length];
+      const m = new THREE.Mesh(geo, mat(color, 0x0a0a1a));
+      m.position.set(x, 0, z);
+      m.userData.color = color;
+      this.escena.add(m);
+      this.piezas.push({ x, z, y: 0, malla: m, estado: 0, t0: 0, vy: 0 });
+    }
+    const inicio = enCirculo(mj.jug.length, 4, Math.PI / 4);
     mj.jug.forEach((j, i) => {
-      Object.assign(j, { x: inicio[i][0], z: inicio[i][1], y: 0.175, vy: 0, tFuera: 0, mira: 1, botObj: null, botT: 0 });
+      Object.assign(j, { x: inicio[i][0], z: inicio[i][1], y: 0.175, vy: 0, tFuera: 0, mira: 1, botObj: null, botT: 0, saltoListo: 0 });
       j.ficha = crearFicha3D(this.escena, j, 1.2);
     });
   },
-  apoyo(j) {
-    // La pieza intacta más alta que está debajo del jugador
-    let mejor = null;
-    this.piezas.forEach((p) => {
-      if (p.estado === 2) return;
-      const tope = p.y + 0.175;
-      if (tope > j.y + 0.05) return;
-      if (Math.hypot(p.x - j.x, p.z - j.z) > 0.85) return;
-      if (!mejor || tope > mejor.y + 0.175) mejor = p;
-    });
-    return mejor;
+  // Pieza que no se ha caído debajo del jugador (estado 0 = normal, 1 = avisando, 2 = cayendo)
+  piezaBajo(x, z) {
+    // La celda más cercana (cada hexágono cubre hasta ~0.87 de su centro; entre dos celdas no hay hueco)
+    let mejor = null, d0 = 1;
+    this.piezas.forEach((p) => { const d = Math.hypot(p.x - x, p.z - z); if (d < d0) { d0 = d; mejor = p; } });
+    return mejor && mejor.estado !== 2 ? mejor : null;
   },
+  avisar(p) { if (p.estado === 0) { p.estado = 1; p.t0 = this.t; } },
   actualizar(dt, mj) {
     this.t += dt;
+    // Las piezas avisando caen después de 1 segundo
     this.piezas.forEach((p) => {
-      if (p.estado === 1 && this.t - p.t0 > 0.55) { p.estado = 2; p.vy = 0; }
-      if (p.estado === 2 && p.malla.visible) { p.vy -= 25 * dt; p.malla.position.y += p.vy * dt; if (p.malla.position.y < p.y - 12) p.malla.visible = false; }
+      if (p.estado === 1 && this.t - p.t0 > this.AVISO) { p.estado = 2; p.vy = 0; }
+      if (p.estado === 2 && p.malla.visible) { p.vy -= 25 * dt; p.malla.position.y += p.vy * dt; if (p.malla.position.y < -12) p.malla.visible = false; }
     });
+    // Además se caen piezas al azar, cada vez más seguido, para que el juego termine
+    this.proxCaida -= dt;
+    if (this.proxCaida <= 0) {
+      const sanas = this.piezas.filter((p) => p.estado === 0);
+      for (let k = 0; k < 1 + Math.floor(this.t / 12) && sanas.length; k++) this.avisar(sanas.splice(Math.floor(Math.random() * sanas.length), 1)[0]);
+      this.proxCaida = Math.max(0.4, 1.6 - (this.t - 12) * 0.05);
+    }
     mj.jug.forEach((j) => {
       if (!j.vivo) return;
-      let dx, dz;
-      if (j.humano) { dx = zonaMuerta(ax_(j.num), 0.12); dz = zonaMuerta(ay_(j.num), 0.12); }
+      j.saltoListo -= dt;
+      const enAire = j.y > 0.2 || j.vy !== 0;
+      let dx, dz, salta = false;
+      if (j.humano) { dx = zonaMuerta(ax_(j.num), 0.12); dz = zonaMuerta(ay_(j.num), 0.12); salta = pulso(j.num, 'accion'); }
       else {
-        j.botT -= dt;
-        const nivelActual = this.NIVELES.findIndex((y) => Math.abs(y + 0.175 - j.y) < 0.1);
-        if (!j.botObj || j.botObj.estado !== 0 || j.botT <= 0) {
-          j.botT = azarEn(0.6, 1.2);
-          const opciones = this.piezas.filter((p) => p.estado === 0 && p.nivel === nivelActual);
-          j.botObj = opciones.length ? opciones[Math.floor(Math.random() * opciones.length)] : null;
+        // Bot: se queda quieto y, cuando su pieza ya va a caer, va a una sana cercana.
+        // A veces reacciona tarde o elige mal (así se les puede ganar).
+        const debajo = this.piezaBajo(j.x, j.z);
+        if (!j.botReaccion) j.botReaccion = azarEn(0.1, 0.4);
+        const urge = !debajo || (debajo.estado === 1 && this.t - debajo.t0 > j.botReaccion);
+        if (j.botObj && (j.botObj.estado === 2 || Math.hypot(j.botObj.x - j.x, j.botObj.z - j.z) < 0.25)) j.botObj = null;
+        if (urge && !j.botObj) {
+          j.botReaccion = Math.random() < 0.08 ? azarEn(0.6, 0.9) : azarEn(0.1, 0.4); // a veces se distrae
+          const sanas = this.piezas.filter((p) => p.estado === 0 && p !== debajo)
+            .sort((a, b) => Math.hypot(a.x - j.x, a.z - j.z) - Math.hypot(b.x - j.x, b.z - j.z));
+          const n = Math.random() < 0.85 ? 3 : 8;
+          j.botObj = sanas.length ? sanas[Math.floor(Math.random() * Math.min(n, sanas.length))] : null;
         }
         dx = j.botObj ? j.botObj.x - j.x : 0; dz = j.botObj ? j.botObj.z - j.z : 0;
+        // Si lo que tiene adelante es un hueco, a veces salta (a veces no se da cuenta)
+        const l0 = Math.hypot(dx, dz) || 1;
+        if (!enAire && !this.piezaBajo(j.x + dx / l0 * 1.2, j.z + dz / l0 * 1.2) && Math.random() < 0.6) salta = true;
       }
       const l = Math.hypot(dx, dz);
-      j.moviendo = l > 0.15;
-      if (j.moviendo) { j.x += dx / l * 4.2 * dt; j.z += dz / l * 4.2 * dt; if (Math.abs(dx) > 0.1) j.mira = Math.sign(dx); }
-      const pisar = (p) => {
-        j.y = p.y + 0.175; j.vy = 0;
-        if (p.estado === 0) { p.estado = 1; p.t0 = this.t; p.malla.material.color.set(0xffffff); }
-      };
-      const p = this.apoyo(j);
-      if (p && j.y - (p.y + 0.175) <= 0.05) pisar(p);
-      else {
+      const fuerza = j.humano ? Math.min(1, l) : (l > 0.15 ? 1 : 0);
+      j.moviendo = fuerza > 0.05;
+      if (j.moviendo) { j.x += dx / (l || 1) * this.VEL * fuerza * dt; j.z += dz / (l || 1) * this.VEL * fuerza * dt; if (Math.abs(dx) > 0.1) j.mira = Math.sign(dx); }
+      // Salto
+      if (salta && !enAire && j.saltoListo <= 0) { j.vy = 7.5; j.saltoListo = 0.9; if (j.humano) sonar('mover'); }
+      if (j.vy !== 0 || j.y > 0.175) {
         j.vy -= 20 * dt;
-        const nuevaY = j.y + j.vy * dt;
-        if (p && p.y + 0.175 >= nuevaY) pisar(p); // cae justo sobre una pieza de abajo
-        else j.y = nuevaY;
-        if (j.y < this.NIVELES[2] - 4) { j.vivo = false; j.tFuera = this.t; sonar('error'); }
+        j.y += j.vy * dt;
+        if (j.y <= 0.175 && j.vy < 0) {
+          const p = this.piezaBajo(j.x, j.z);
+          if (p && j.y > -0.3) { j.y = 0.175; j.vy = 0; this.avisar(p); }
+          else if (j.y < -6) { j.vivo = false; j.tFuera = this.t; sonar('error'); }
+        }
+      } else {
+        const p = this.piezaBajo(j.x, j.z);
+        if (p) this.avisar(p);
+        else j.vy = -0.01; // no hay piso: empieza a caer
       }
     });
-    if (mj.jug.filter((j) => j.vivo).length <= 1 || this.t > 60) this.fin = true;
+    if (mj.jug.filter((j) => j.vivo).length <= (mj.jug.length > 1 ? 1 : 0) || this.t > 45) this.fin = true;
   },
-  ranking(jug) { return [...jug].sort((a, b) => (b.vivo - a.vivo) || (b.tFuera - a.tFuera) || (b.y - a.y)); },
-  hud(j) {
-    if (!j.vivo) return 'FUERA';
-    const n = mjHex.NIVELES.findIndex((y) => j.y >= y - 0.2);
-    return 'PISO ' + (3 - Math.max(0, n));
-  },
+  ranking(jug) { return [...jug].sort((a, b) => (b.vivo - a.vivo) || (b.tFuera - a.tFuera)); },
+  hud: (j) => (j.vivo ? 'EN PIE' : 'FUERA'),
   dibujar(c, mj) {
     fondoEspacio(c, '#0b0626', '#2a1a6a');
-    const vivos = mj.jug.filter((j) => j.vivo);
-    const humanos = vivos.filter((j) => j.humano);
-    const ref = humanos.length ? humanos : vivos;
-    const foco = ref.length ? Math.min(...ref.map((j) => j.y)) : this.NIVELES[2];
-    this.camY += (foco - this.camY) * 0.12;
-    // Los pisos que quedan encima de alguien se vuelven casi transparentes
-    const masBajo = vivos.length ? Math.min(...vivos.map((j) => j.y)) : this.NIVELES[2];
+    // Aviso: parpadea en rojo, cada vez más rápido
     this.piezas.forEach((p) => {
-      const transparente = masBajo < p.y - 0.5;
       const m = p.malla.material;
-      if (m.userData.transp !== transparente) {
-        m.userData.transp = transparente;
-        m.transparent = transparente; m.opacity = transparente ? 0.18 : 1; m.depthWrite = !transparente;
-      }
+      if (p.estado === 1) {
+        const k = (this.t - p.t0) / this.AVISO;
+        m.color.set(Math.floor((this.t - p.t0) * (6 + k * 14)) % 2 ? 0xff2a3d : 0xffffff);
+        p.malla.position.y = Math.sin(this.t * 60) * 0.03 * k; // tiembla antes de caer
+      } else if (p.estado === 0) m.color.set(p.malla.userData.color);
     });
-    this.cam.position.set(0, this.camY + 13, 12.5);
-    this.cam.lookAt(0, this.camY - 1.5, 0.5);
-    this.piezas.forEach((p) => { if (p.estado === 1) p.malla.material.color.set(Math.floor(this.t * 12) % 2 ? 0xffffff : this.COLORES[p.nivel]); });
     mj.jug.forEach((j) => {
-      const p = j.vivo ? this.apoyo(j) : null;
-      moverFicha(j.ficha, j.x, j.y, j.z, p ? p.y + 0.175 : null, j.moviendo ? cuadroMover() : cuadroQuieto(j), j.mira < 0);
-      j.ficha.s.visible = j.vivo || j.y > this.NIVELES[2] - 10;
+      const p = j.vivo ? this.piezaBajo(j.x, j.z) : null;
+      const cuadro = j.y > 0.3 ? 4 : j.moviendo ? cuadroMover() : cuadroQuieto(j);
+      moverFicha(j.ficha, j.x, j.y, j.z, p ? 0.175 : null, cuadro, j.mira < 0);
+      j.ficha.s.visible = j.y > -10;
     });
     render3DCompleto(c, this.escena, this.cam);
   }
@@ -1676,7 +1685,7 @@ const MINIJUEGOS = [mjDuelo, mjMeteoros, mjPolvo, mjTractor, mjMemoria, mjSumo, 
 // Qué control muestra el celular en cada minijuego: joystick, cruceta, solo el botón, inclinar o agitar
 const CONTROL_MJ = {
   duelo: { control: 'boton' }, meteoros: { control: 'stick' }, polvo: { control: 'stick' }, tractor: { control: 'boton' },
-  memoria: { control: 'cruz' }, sumo: { control: 'stick', boton: true }, hex: { control: 'stick' }, tunel: { control: 'inclinar' },
+  memoria: { control: 'cruz' }, sumo: { control: 'stick', boton: true }, hex: { control: 'stick', boton: true }, tunel: { control: 'inclinar' },
   cohetes: { control: 'agitar', boton: true }, equilibrio: { control: 'inclinar' }, pintar: { control: 'stick' }, aliens: { control: 'cruz', boton: true }
 };
 MINIJUEGOS.forEach((m) => Object.assign(m, CONTROL_MJ[m.id]));
